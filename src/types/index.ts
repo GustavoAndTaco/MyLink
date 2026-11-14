@@ -17,7 +17,6 @@ export interface SocialLinks {
   blog?: string;
   email?: string;
   linkedin?: string;
-  twitter?: string;
 }
 
 export type BlockType = "link" | "github_repo" | "tech_stack" | "project";
@@ -44,7 +43,6 @@ export interface BlockItem {
     githubUrl?: string;
     tags: string[];
   };
-  clicks: number;
   isActive: boolean;
 }
 
@@ -53,5 +51,4 @@ export interface ProfileData {
   theme: ThemeType;
   socialLinks: SocialLinks;
   blocks: BlockItem[];
-  pageViews: number;
 }

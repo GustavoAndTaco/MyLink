@@ -1,6 +1,6 @@
 import { ProfileData } from "@/types";
 
-export const initialProfileData: ProfileData = {
+export const defaultProfileData: ProfileData = {
   user: {
     username: "developer",
     fullName: "Alex Rivera",
@@ -19,7 +19,6 @@ export const initialProfileData: ProfileData = {
     email: "developer@example.com",
     linkedin: "https://linkedin.com",
   },
-  pageViews: 1248,
   blocks: [
     {
       id: "block-1",
@@ -29,7 +28,6 @@ export const initialProfileData: ProfileData = {
       url: "https://github.com",
       icon: "🐙",
       badge: "Main Hub",
-      clicks: 432,
       isActive: true,
     },
     {
@@ -40,7 +38,6 @@ export const initialProfileData: ProfileData = {
       url: "https://velog.io",
       icon: "✍️",
       badge: "Articles",
-      clicks: 289,
       isActive: true,
     },
     {
@@ -59,7 +56,6 @@ export const initialProfileData: ProfileData = {
         language: "TypeScript",
         languageColor: "#3178c6",
       },
-      clicks: 195,
       isActive: true,
     },
     {
@@ -79,7 +75,6 @@ export const initialProfileData: ProfileData = {
         "Docker",
         "Zustand",
       ],
-      clicks: 142,
       isActive: true,
     },
     {
@@ -95,7 +90,6 @@ export const initialProfileData: ProfileData = {
         githubUrl: "https://github.com",
         tags: ["Next.js", "AI Agent", "Tailwind"],
       },
-      clicks: 120,
       isActive: true,
     },
     {
@@ -106,7 +100,6 @@ export const initialProfileData: ProfileData = {
       url: "mailto:developer@example.com",
       icon: "📫",
       badge: "Direct",
-      clicks: 70,
       isActive: true,
     },
   ],

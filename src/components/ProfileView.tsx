@@ -1,19 +1,13 @@
 "use client";
 
-import { ProfileData, BlockItem } from "@/types";
+import { ProfileData } from "@/types";
 import { useState } from "react";
 
 interface ProfileViewProps {
   data: ProfileData;
-  onBlockClick?: (block: BlockItem) => void;
-  isMobileFrame?: boolean;
 }
 
-export default function ProfileView({
-  data,
-  onBlockClick,
-  isMobileFrame = false,
-}: ProfileViewProps) {
+export default function ProfileView({ data }: ProfileViewProps) {
   const { user, theme, blocks, socialLinks } = data;
   const [isPlaying, setIsPlaying] = useState(true);
   const [isLiked, setIsLiked] = useState(true);
@@ -81,66 +75,46 @@ export default function ProfileView({
   const activeBlocks = blocks.filter((b) => b.isActive);
 
   return (
-    <div
-      className={`w-full min-h-full flex flex-col ${st.wrapper} transition-colors duration-200 select-none ${
-        isMobileFrame ? "pb-24 text-xs" : "pb-28 text-sm"
-      }`}
-    >
+    <div className={`w-full min-h-screen flex flex-col ${st.wrapper} pb-28 select-none`}>
       {/* Top Header Glow & Profile Hero */}
-      <div
-        className={`w-full ${st.headerGlow} ${
-          isMobileFrame ? "pt-5 pb-6 px-4" : "pt-8 pb-10 px-6 sm:px-8"
-        }`}
-      >
-        <div className="max-w-3xl mx-auto flex flex-col items-center text-center space-y-3">
+      <div className={`w-full ${st.headerGlow} pt-12 pb-10 px-6 sm:px-8`}>
+        <div className="max-w-2xl mx-auto flex flex-col items-center text-center space-y-4">
           {/* Avatar */}
           <div className="relative group">
             <div
-              className={`rounded-full overflow-hidden flex items-center justify-center bg-zinc-800 ${
-                st.avatarBorder
-              } transition-transform duration-200 ${
-                isMobileFrame ? "w-20 h-20 text-3xl" : "w-28 h-28 sm:w-32 sm:h-32 text-5xl"
-              }`}
+              className={`w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden flex items-center justify-center bg-zinc-800 ${st.avatarBorder} text-5xl transition-transform duration-200 group-hover:scale-105`}
             >
               {user.avatar}
             </div>
             {user.verified && (
-              <span className="absolute bottom-1 right-1 flex h-4 w-4">
+              <span className="absolute bottom-1 right-1 flex h-5 w-5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-[#121212]"></span>
+                <span className="relative inline-flex rounded-full h-5 w-5 bg-emerald-500 border-2 border-[#121212]"></span>
               </span>
             )}
           </div>
 
           {/* Name & Role */}
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-center gap-1.5 text-xs font-semibold">
               <span className={st.highlight}>
                 {user.verified ? "✓ Verified Developer" : `@${user.username}`}
               </span>
             </div>
-            <h1
-              className={`font-black tracking-tight ${
-                isMobileFrame ? "text-xl" : "text-2xl sm:text-4xl"
-              }`}
-            >
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight">
               {user.fullName || user.role}
             </h1>
-            <p className={`text-xs ${st.subtext} font-medium`}>{user.role}</p>
+            <p className={`text-xs sm:text-sm ${st.subtext} font-medium`}>{user.role}</p>
           </div>
 
           {/* Bio */}
-          <p
-            className={`max-w-xl mx-auto leading-relaxed ${st.subtext} ${
-              isMobileFrame ? "text-[11px] line-clamp-3" : "text-xs sm:text-sm"
-            }`}
-          >
+          <p className={`max-w-lg mx-auto leading-relaxed text-xs sm:text-sm ${st.subtext}`}>
             {user.bio}
           </p>
 
           {/* Developer Stats */}
           <div
-            className={`flex flex-wrap items-center justify-center gap-3 pt-1 text-[11px] ${st.subtext}`}
+            className={`flex flex-wrap items-center justify-center gap-3 pt-1 text-xs ${st.subtext}`}
           >
             <span>
               <strong className="text-white">{user.monthlyCommits}</strong> Commits
@@ -155,20 +129,18 @@ export default function ProfileView({
             </span>
           </div>
 
-          {/* Action Bar (Play & Follow) */}
+          {/* Action Buttons */}
           <div className="flex items-center justify-center gap-3 pt-2">
             <button
               onClick={() => setIsPlaying(!isPlaying)}
-              className={`flex items-center justify-center shadow-md transition-all ${
-                st.accentBtn
-              } ${isMobileFrame ? "w-10 h-10 text-sm" : "w-12 h-12 text-base"}`}
+              className={`w-12 h-12 flex items-center justify-center shadow-md transition-all ${st.accentBtn}`}
               title="Play / Pause"
             >
               {isPlaying ? "❚❚" : "▶"}
             </button>
             <a
               href={`mailto:${socialLinks.email || "developer@example.com"}`}
-              className={`px-5 py-2 text-xs font-bold uppercase transition-all ${st.pillBtn}`}
+              className={`px-6 py-2.5 text-xs font-bold uppercase transition-all ${st.pillBtn}`}
             >
               Contact
             </a>
@@ -177,21 +149,13 @@ export default function ProfileView({
       </div>
 
       {/* Main Blocks Container */}
-      <main
-        className={`flex-1 w-full max-w-2xl mx-auto space-y-3.5 px-4 ${
-          isMobileFrame ? "mt-3" : "mt-6"
-        }`}
-      >
+      <main className="flex-1 w-full max-w-xl mx-auto space-y-3.5 px-4 mt-6">
         {activeBlocks.length === 0 ? (
           <div className={`p-8 text-center rounded-xl ${st.card} ${st.subtext}`}>
-            표시할 링크가 없습니다. 대시보드에서 블록을 추가해보세요!
+            표시할 링크가 없습니다.
           </div>
         ) : (
           activeBlocks.map((block) => {
-            const handleClick = (e: React.MouseEvent) => {
-              if (onBlockClick) onBlockClick(block);
-            };
-
             // 1. 일반 링크 카드
             if (block.type === "link") {
               return (
@@ -200,10 +164,9 @@ export default function ProfileView({
                   href={block.url || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={handleClick}
-                  className={`group flex items-center justify-between p-3.5 rounded-xl transition-all duration-150 cursor-pointer ${st.card}`}
+                  className={`group flex items-center justify-between p-4 rounded-xl transition-all duration-150 cursor-pointer ${st.card}`}
                 >
-                  <div className="flex items-center gap-3 min-w-0 pr-3">
+                  <div className="flex items-center gap-3.5 min-w-0 pr-3">
                     <span className="text-2xl shrink-0 group-hover:scale-110 transition-transform">
                       {block.icon || "🔗"}
                     </span>
@@ -212,7 +175,7 @@ export default function ProfileView({
                         {block.title}
                       </div>
                       {block.subtitle && (
-                        <div className={`text-xs truncate ${st.subtext}`}>
+                        <div className={`text-xs truncate ${st.subtext} mt-0.5`}>
                           {block.subtitle}
                         </div>
                       )}
@@ -243,7 +206,6 @@ export default function ProfileView({
                   href={block.url || "https://github.com"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={handleClick}
                   className={`block p-4 rounded-xl transition-all duration-150 cursor-pointer ${st.card}`}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -352,7 +314,6 @@ export default function ProfileView({
                         href={proj.demoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={handleClick}
                         className={`flex-1 text-center py-2 text-xs font-bold transition-all ${st.accentBtn}`}
                       >
                         Live Demo ↗
@@ -363,7 +324,6 @@ export default function ProfileView({
                         href={proj.githubUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={handleClick}
                         className={`flex-1 text-center py-2 text-xs font-bold transition-all ${st.pillBtn}`}
                       >
                         GitHub Code ↗
@@ -379,11 +339,9 @@ export default function ProfileView({
         )}
 
         {/* Footer */}
-        <div
-          className={`pt-6 pb-2 text-center text-[11px] ${st.subtext} space-y-1`}
-        >
+        <div className={`pt-8 pb-4 text-center text-xs ${st.subtext} space-y-1.5`}>
           <p>© 2026 {user.fullName || user.username} • Powered by MyLink</p>
-          <div className="flex justify-center gap-3 pt-1">
+          <div className="flex justify-center gap-4 pt-1">
             {socialLinks.github && (
               <a
                 href={socialLinks.github}
@@ -418,28 +376,26 @@ export default function ProfileView({
         </div>
       </main>
 
-      {/* Spotify 테마일 때 하단 Now Playing 바 렌더링 */}
+      {/* Spotify 테마일 때 하단 Now Playing 바 */}
       {theme === "spotify-dark" && (
         <aside
-          className={`fixed bottom-0 left-0 right-0 h-16 ${st.nowPlaying} z-40 px-4 flex items-center justify-between select-none ${
-            isMobileFrame ? "text-[11px]" : "text-xs"
-          }`}
+          className={`fixed bottom-0 left-0 right-0 h-16 ${st.nowPlaying} z-40 px-4 sm:px-6 flex items-center justify-between select-none text-xs`}
         >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded bg-gradient-to-br from-[#1ed760] to-[#121212] flex items-center justify-center text-sm shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded bg-gradient-to-br from-[#1ed760] to-[#121212] flex items-center justify-center text-base shrink-0 shadow-sm">
               💻
             </div>
             <div className="truncate">
               <div className="font-bold text-white truncate">
                 Building The Next Web
               </div>
-              <div className="text-[10px] text-[#b3b3b3] truncate">
+              <div className="text-[11px] text-[#b3b3b3] truncate">
                 {user.role}
               </div>
             </div>
             <button
               onClick={() => setIsLiked(!isLiked)}
-              className={`cursor-pointer ${
+              className={`cursor-pointer ml-1 ${
                 isLiked ? "text-[#1ed760]" : "text-zinc-500"
               }`}
             >
@@ -447,10 +403,17 @@ export default function ProfileView({
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2 text-[10px] text-zinc-400 font-mono">
+              <span>01:42</span>
+              <div className="w-24 h-1 bg-zinc-700 rounded-full overflow-hidden">
+                <div className="w-2/5 h-full bg-white rounded-full"></div>
+              </div>
+              <span>03:45</span>
+            </div>
             <button
               onClick={() => setIsPlaying(!isPlaying)}
-              className="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center font-bold text-xs"
+              className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center font-bold text-xs hover:scale-105 transition-transform"
             >
               {isPlaying ? "❚❚" : "▶"}
             </button>
