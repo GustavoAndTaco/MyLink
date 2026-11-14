@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MyLink",
-  description: "나만의 링크 관리 서비스",
+  title: "Dev Link | 개발자 프로필",
+  description: "코드와 기술로 가치를 짓는 개발자 소개 및 링크 페이지",
 };
 
 export default function RootLayout({
