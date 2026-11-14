@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Dev Link | 개발자 프로필",
-  description: "코드와 기술로 가치를 짓는 개발자 소개 및 링크 페이지",
+  title: "DevLink | Spotify Edition",
+  description: "Spotify 디자인 시스템 감성으로 빚어낸 개발자 프로필 및 포트폴리오 링크트리",
 };
 
 export default function RootLayout({
@@ -12,8 +12,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="ko" className="h-full bg-[#121212] text-white antialiased">
+      <body className="min-h-full flex flex-col bg-[#121212] text-white">{children}</body>
     </html>
   );
 }
