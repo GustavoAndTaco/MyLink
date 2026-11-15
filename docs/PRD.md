@@ -22,6 +22,7 @@
 - **Styling & Design System:** Tailwind CSS v4, shadcn/ui (Base UI / Radix primitives, Lucide React)
 - **Type Safety & Utilities:** TypeScript, Class Variance Authority (CVA), `cn` (clsx + tailwind-merge)
 - **State & Storage:** Web Storage API (localStorage)
+- **Backend / Analytics (준비):** Firebase JS SDK (`src/lib/Firebase.ts`, `.env.local` 환경변수 기반 API 키 관리)
 
 ---
 
@@ -190,6 +191,7 @@ export interface BlockItem {
 - [ ] 실시간 모바일 프레임 라이브 프리뷰
 - [ ] 프로필 정보 및 테마 변경 에디터
 
-### Phase 3: 방문자 통계 & 백엔드 연동 (추후 진행)
+### Phase 3: 방문자 통계 & 백엔드 연동 (진행 중)
+- [x] Firebase SDK 설치 및 환경변수 기반 초기화 설정 (`src/lib/Firebase.ts`, `.env.local`)
 - [ ] 링크 클릭수 및 방문자 수(PV) 집계
-- [ ] Supabase / DB 연동 및 사용자 인증
+- [ ] Firebase / DB 연동 및 사용자 인증
