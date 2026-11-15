@@ -5,6 +5,7 @@ import { ProfileData } from "@/types";
 import { getStoredProfile } from "@/lib/storage";
 import { defaultProfileData } from "@/lib/mockData";
 import ProfileView from "@/components/ProfileView";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const [profileData, setProfileData] = useState<ProfileData>(defaultProfileData);
@@ -19,10 +20,10 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#121212] flex items-center justify-center text-[#1ed760] font-mono text-sm">
+      <div className="min-h-screen bg-spotify-black flex items-center justify-center text-spotify-green font-mono text-sm">
         <div className="flex items-center gap-2">
-          <span className="animate-spin text-lg">⚙️</span>
-          <span>프로필 로딩 중...</span>
+          <Loader2 className="w-5 h-5 animate-spin text-spotify-green" />
+          <span>링크 목록을 불러오는 중...</span>
         </div>
       </div>
     );

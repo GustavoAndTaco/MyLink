@@ -36,3 +36,17 @@ export function saveStoredProfile(data: ProfileData): void {
     console.error("로컬 스토리지 저장 실패:", error);
   }
 }
+
+/**
+ * 로컬 스토리지 데이터를 기본 Mock 데이터로 리셋합니다.
+ */
+export function resetToDefaultProfile(): ProfileData {
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultProfileData));
+    } catch (error) {
+      console.error("로컬 스토리지 초기화 실패:", error);
+    }
+  }
+  return defaultProfileData;
+}

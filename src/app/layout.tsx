@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "DevLink | Spotify Edition",
@@ -12,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="h-full bg-[#121212] text-white antialiased">
-      <body className="min-h-full flex flex-col bg-[#121212] text-white">{children}</body>
+    <html lang="ko" className={cn("h-full bg-spotify-black text-white antialiased", "font-sans", geist.variable)}>
+      <body className="min-h-full flex flex-col bg-spotify-black text-white">{children}</body>
     </html>
   );
 }

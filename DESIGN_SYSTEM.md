@@ -244,3 +244,19 @@ What distinguishes Spotify is its pill-and-circle geometry. Primary buttons use 
 4. Uppercase + wide tracking on buttons — the systematic label voice
 5. Heavy shadows (0.3–0.5 opacity) for elevation — light shadows are invisible on dark
 6. Album art provides all the color — the UI stays achromatic
+
+---
+
+## 10. Integration with shadcn/ui
+
+The design system uses [shadcn/ui](https://ui.shadcn.com/) as the component engine while preserving Spotify Dark aesthetics:
+
+- **Component Registry**: Atomic UI components are installed into `@/components/ui/` (`Button`, `Card`, `Badge`, `Avatar`, `Dialog`, etc.) via the shadcn CLI.
+- **CSS Variables & Theming**:
+  - Tailwind CSS v4 `@theme inline` integrates directly with shadcn's CSS variables (`--background`, `--foreground`, `--primary`, `--card`, `--radius`, etc.) in `src/app/globals.css`.
+  - Spotify Dark palette is mapped to shadcn tokens:
+    - `--background`: Near Black (`#121212`)
+    - `--card`: Surface Dark (`#181818` / `#252525`)
+    - `--primary`: Spotify Green (`#1ed760`)
+    - `--radius`: Pill geometry (`9999px` or `0.5rem` / `min(...)`)
+- **Variant Pattern**: Use `class-variance-authority` (CVA) within shadcn components to provide Spotify variants (e.g., `variant="spotify"`, `size="pill"`).
