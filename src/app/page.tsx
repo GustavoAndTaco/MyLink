@@ -122,26 +122,22 @@ export default function Home() {
   };
 
   const handleTogglePreview = () => {
-    setIsPreviewMode((prev) => {
-      const next = !prev;
-      if (next) {
-        toast.info(
-          "방문자 미리보기 모드",
-          "편집 버튼이 숨겨지고 방문자 화면으로 표시됩니다."
-        );
-      } else {
-        toast.info("편집 모드로 전환되었습니다", "링크와 프로필을 자유롭게 수정하세요.");
-      }
-      return next;
-    });
+    const next = !isPreviewMode;
+    setIsPreviewMode(next);
+    if (next) {
+      toast.info(
+        "방문자 미리보기 모드",
+        "편집 버튼이 숨겨지고 방문자 화면으로 표시됩니다."
+      );
+    } else {
+      toast.info("편집 모드로 전환되었습니다", "링크와 프로필을 자유롭게 수정하세요.");
+    }
   };
 
   const handleToggleSummary = () => {
-    setIsSummaryOpen((prev) => {
-      const next = !prev;
-      toast.info(next ? "계정 요약 표시" : "계정 요약 숨김");
-      return next;
-    });
+    const next = !isSummaryOpen;
+    setIsSummaryOpen(next);
+    toast.info(next ? "계정 요약 표시" : "계정 요약 숨김");
   };
 
   const handleUpdateProfile = async (
