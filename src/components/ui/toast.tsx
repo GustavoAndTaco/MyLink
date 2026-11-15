@@ -79,16 +79,21 @@ export function AppToastProvider({ children }: { children: React.ReactNode }) {
 
 export function useAppToast() {
   const manager = Toast.useToastManager();
+  const addRef = React.useRef(manager.add);
+
+  React.useEffect(() => {
+    addRef.current = manager.add;
+  }, [manager.add]);
 
   return React.useMemo(
     () => ({
       success: (title: string, description?: string) =>
-        manager.add({ title, description, type: "success" }),
+        addRef.current({ title, description, type: "success" }),
       error: (title: string, description?: string) =>
-        manager.add({ title, description, type: "error" }),
+        addRef.current({ title, description, type: "error" }),
       info: (title: string, description?: string) =>
-        manager.add({ title, description, type: "info" }),
+        addRef.current({ title, description, type: "info" }),
     }),
-    [manager]
+    []
   );
 }

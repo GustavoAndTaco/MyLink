@@ -98,7 +98,8 @@ export default function Home() {
       active = false;
       unsubscribe();
     };
-  }, [toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleGoogleLogin = async () => {
     try {
