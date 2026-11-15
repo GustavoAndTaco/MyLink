@@ -43,6 +43,8 @@ export interface BlockItem {
     githubUrl?: string;
     tags: string[];
   };
+  order?: number;
+  createdAt?: number;
   isActive: boolean;
 }
 

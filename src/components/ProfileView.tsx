@@ -8,22 +8,61 @@ import GitHubRepoCard from "./profile/GitHubRepoCard";
 import TechStackCard from "./profile/TechStackCard";
 import ProjectCard from "./profile/ProjectCard";
 import AddLinkDialog from "./profile/AddLinkDialog";
+import SortableLinkWrapper from "./profile/SortableLinkWrapper";
 import { Plus } from "lucide-react";
 
 interface ProfileViewProps {
   data: ProfileData;
-  onDataChange?: (data: ProfileData) => void;
+  onAddBlock: (block: BlockItem) => void;
+  onUpdateBlock: (block: BlockItem) => void;
+  onDeleteBlock: (id: string) => void;
+  onReorderBlocks: (blocks: BlockItem[]) => void;
 }
 
-export default function ProfileView({ data, onDataChange }: ProfileViewProps) {
+export default function ProfileView({
+  data,
+  onAddBlock,
+  onUpdateBlock,
+  onDeleteBlock,
+  onReorderBlocks,
+}: ProfileViewProps) {
   const { user, theme, blocks, socialLinks } = data;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingBlock, setEditingBlock] = useState<BlockItem | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const activeBlocks = blocks.filter((b) => b.isActive);
 
-  const handleAddBlock = (newBlock: BlockItem) => {
-    if (!onDataChange) return;
-    onDataChange({ ...data, blocks: [...data.blocks, newBlock] });
+  const handleOpenAdd = () => {
+    setEditingBlock(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleOpenEdit = (block: BlockItem) => {
+    setEditingBlock(block);
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setEditingBlock(null);
+  };
+
+  const handleDrop = (dropIndex: number) => {
+    if (dragIndex === null || dragIndex === dropIndex) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const updated = [...activeBlocks];
+    const [moved] = updated.splice(dragIndex, 1);
+    updated.splice(dropIndex, 0, moved);
+
+    setDragIndex(null);
+    setDragOverIndex(null);
+    onReorderBlocks(updated);
   };
 
   const getThemeWrapper = () => {
@@ -40,14 +79,25 @@ export default function ProfileView({ data, onDataChange }: ProfileViewProps) {
     }
   };
 
+  const renderBlockContent = (block: BlockItem) => {
+    switch (block.type) {
+      case "link":
+        return <LinkCard block={block} />;
+      case "github_repo":
+        return <GitHubRepoCard block={block} />;
+      case "tech_stack":
+        return <TechStackCard block={block} />;
+      case "project":
+        return <ProjectCard block={block} />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className={`w-full min-h-screen flex flex-col ${getThemeWrapper()} pb-16 select-none antialiased`}>
       {/* 1. 프로필 헤더 */}
-      <ProfileHeader
-        user={user}
-        socialLinks={socialLinks}
-        theme={theme}
-      />
+      <ProfileHeader user={user} socialLinks={socialLinks} theme={theme} />
 
       {/* 2. 링크 목록 컨테이너 */}
       <main className="flex-1 w-full max-w-xl mx-auto space-y-3.5 px-4 mt-6">
@@ -56,25 +106,32 @@ export default function ProfileView({ data, onDataChange }: ProfileViewProps) {
             등록된 링크가 없습니다.
           </div>
         ) : (
-          activeBlocks.map((block) => {
-            switch (block.type) {
-              case "link":
-                return <LinkCard key={block.id} block={block} />;
-              case "github_repo":
-                return <GitHubRepoCard key={block.id} block={block} />;
-              case "tech_stack":
-                return <TechStackCard key={block.id} block={block} />;
-              case "project":
-                return <ProjectCard key={block.id} block={block} />;
-              default:
-                return null;
-            }
-          })
+          activeBlocks.map((block, index) => (
+            <SortableLinkWrapper
+              key={block.id}
+              id={block.id}
+              index={index}
+              isDragging={dragIndex === index}
+              isDragOver={dragOverIndex === index}
+              onDragStart={(idx) => setDragIndex(idx)}
+              onDragEnter={(idx) => setDragOverIndex(idx)}
+              onDragOver={() => {}}
+              onDrop={handleDrop}
+              onDragEnd={() => {
+                setDragIndex(null);
+                setDragOverIndex(null);
+              }}
+              onEdit={() => handleOpenEdit(block)}
+              onDelete={() => onDeleteBlock(block.id)}
+            >
+              {renderBlockContent(block)}
+            </SortableLinkWrapper>
+          ))
         )}
 
         {/* 링크 추가 버튼 */}
         <button
-          onClick={() => setIsDialogOpen(true)}
+          onClick={handleOpenAdd}
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border-2 border-dashed border-zinc-700 hover:border-spotify-green/50 text-spotify-subtext hover:text-spotify-green transition-all duration-200 text-sm font-medium group"
           aria-label="링크 추가"
         >
@@ -87,17 +144,32 @@ export default function ProfileView({ data, onDataChange }: ProfileViewProps) {
           <p>© 2026 {user.fullName || user.username} • Powered by MyLink</p>
           <div className="flex justify-center gap-4 text-xs">
             {socialLinks.github && (
-              <a href={socialLinks.github} target="_blank" rel="noreferrer" className="hover:text-white hover:underline transition-colors">
+              <a
+                href={socialLinks.github}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-white hover:underline transition-colors"
+              >
                 GitHub
               </a>
             )}
             {socialLinks.blog && (
-              <a href={socialLinks.blog} target="_blank" rel="noreferrer" className="hover:text-white hover:underline transition-colors">
+              <a
+                href={socialLinks.blog}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-white hover:underline transition-colors"
+              >
                 Blog
               </a>
             )}
             {socialLinks.linkedin && (
-              <a href={socialLinks.linkedin} target="_blank" rel="noreferrer" className="hover:text-white hover:underline transition-colors">
+              <a
+                href={socialLinks.linkedin}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-white hover:underline transition-colors"
+              >
                 LinkedIn
               </a>
             )}
@@ -105,11 +177,13 @@ export default function ProfileView({ data, onDataChange }: ProfileViewProps) {
         </footer>
       </main>
 
-      {/* 3. 링크 추가 다이얼로그 */}
+      {/* 3. 링크 추가 / 수정 다이얼로그 */}
       <AddLinkDialog
         isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        onAdd={handleAddBlock}
+        editingBlock={editingBlock}
+        onClose={handleCloseDialog}
+        onAdd={onAddBlock}
+        onUpdate={onUpdateBlock}
       />
     </div>
   );

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { BlockItem, BlockType } from "@/types";
-import { X, Plus, Link2, FolderGit2, Cpu, Rocket, AlertCircle, CheckCircle2 } from "lucide-react";
+import { X, Plus, Pencil, Link2, FolderGit2, Cpu, Rocket, AlertCircle, CheckCircle2 } from "lucide-react";
 
 // ──────────────────────────────────────────────
 // 유효성 검사 헬퍼
@@ -158,10 +158,34 @@ function validate(form: FormState): FormErrors {
 }
 
 // ──────────────────────────────────────────────
+// BlockItem -> FormState 변환 (수정 모드용)
+// ──────────────────────────────────────────────
+function blockToForm(block: BlockItem): FormState {
+  return {
+    type: block.type,
+    title: block.title || "",
+    subtitle: block.subtitle || "",
+    url: block.url || "",
+    icon: block.icon || "",
+    badge: block.badge || "",
+    repoName: block.pinnedRepo?.name || "",
+    repoDesc: block.pinnedRepo?.description || "",
+    repoStars: block.pinnedRepo?.stars !== undefined ? String(block.pinnedRepo.stars) : "",
+    repoForks: block.pinnedRepo?.forks !== undefined ? String(block.pinnedRepo.forks) : "",
+    repoLang: block.pinnedRepo?.language || "",
+    repoLangColor: block.pinnedRepo?.languageColor || "#3178c6",
+    techStackRaw: block.techStack ? block.techStack.join(", ") : "",
+    demoUrl: block.project?.demoUrl || "",
+    githubUrl: block.project?.githubUrl || "",
+    tagsRaw: block.project?.tags ? block.project.tags.join(", ") : "",
+  };
+}
+
+// ──────────────────────────────────────────────
 // BlockItem 빌더
 // ──────────────────────────────────────────────
-function buildBlock(form: FormState): BlockItem {
-  const id = `block-${Date.now()}`;
+function buildBlock(form: FormState, existing?: BlockItem | null): BlockItem {
+  const id = existing?.id || `block-${Date.now()}`;
   const base = {
     id,
     type: form.type,
@@ -169,7 +193,9 @@ function buildBlock(form: FormState): BlockItem {
     subtitle: form.subtitle.trim() || undefined,
     icon: form.icon.trim() || undefined,
     badge: form.badge.trim() || undefined,
-    isActive: true,
+    createdAt: existing?.createdAt ?? Date.now(),
+    order: existing?.order,
+    isActive: existing?.isActive ?? true,
   };
 
   if (form.type === "link") {
@@ -274,14 +300,31 @@ function Input({
 // ──────────────────────────────────────────────
 interface AddLinkDialogProps {
   isOpen: boolean;
+  editingBlock?: BlockItem | null;
   onClose: () => void;
   onAdd: (block: BlockItem) => void;
+  onUpdate?: (block: BlockItem) => void;
 }
 
-export default function AddLinkDialog({ isOpen, onClose, onAdd }: AddLinkDialogProps) {
+export default function AddLinkDialog({
+  isOpen,
+  editingBlock,
+  onClose,
+  onAdd,
+  onUpdate,
+}: AddLinkDialogProps) {
+  const isEditMode = !!editingBlock;
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setForm(editingBlock ? blockToForm(editingBlock) : INITIAL_FORM);
+      setErrors({});
+      setSubmitted(false);
+    }
+  }, [isOpen, editingBlock]);
 
   const set = useCallback((key: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -290,7 +333,14 @@ export default function AddLinkDialog({ isOpen, onClose, onAdd }: AddLinkDialogP
   }, [errors]);
 
   const handleTypeChange = (type: BlockType) => {
-    setForm({ ...INITIAL_FORM, type });
+    setForm((prev) => ({
+      ...INITIAL_FORM,
+      type,
+      title: prev.title,
+      subtitle: prev.subtitle,
+      icon: prev.icon,
+      badge: prev.badge,
+    }));
     setErrors({});
     setSubmitted(false);
   };
@@ -301,7 +351,12 @@ export default function AddLinkDialog({ isOpen, onClose, onAdd }: AddLinkDialogP
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
-    onAdd(buildBlock(form));
+    const built = buildBlock(form, editingBlock);
+    if (isEditMode && onUpdate) {
+      onUpdate(built);
+    } else {
+      onAdd(built);
+    }
     setForm(INITIAL_FORM);
     setErrors({});
     setSubmitted(false);
@@ -323,7 +378,7 @@ export default function AddLinkDialog({ isOpen, onClose, onAdd }: AddLinkDialogP
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="링크 추가"
+      aria-label={isEditMode ? "링크 수정" : "링크 추가"}
     >
       {/* 배경 Dim */}
       <div
@@ -338,9 +393,15 @@ export default function AddLinkDialog({ isOpen, onClose, onAdd }: AddLinkDialogP
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-full bg-spotify-green/15 border border-spotify-green/30 flex items-center justify-center">
-              <Plus className="w-4 h-4 text-spotify-green" />
+              {isEditMode ? (
+                <Pencil className="w-3.5 h-3.5 text-spotify-green" />
+              ) : (
+                <Plus className="w-4 h-4 text-spotify-green" />
+              )}
             </div>
-            <h2 className="text-base font-bold text-white">링크 추가</h2>
+            <h2 className="text-base font-bold text-white">
+              {isEditMode ? "링크 수정" : "링크 추가"}
+            </h2>
           </div>
           <button
             onClick={handleClose}
@@ -619,7 +680,7 @@ export default function AddLinkDialog({ isOpen, onClose, onAdd }: AddLinkDialogP
             className="px-5 py-2 rounded-full text-xs font-bold bg-spotify-green hover:bg-spotify-green-hover text-black flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 shadow-sm"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
-            링크 추가
+            {isEditMode ? "수정 저장" : "링크 추가"}
           </button>
         </div>
       </div>

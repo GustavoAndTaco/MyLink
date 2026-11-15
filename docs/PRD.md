@@ -66,7 +66,10 @@
     - `tech_stack`: 쉼표 구분 목록 필수, 최소 1개·최대 20개 제한, 실시간 뱃지 미리보기
     - `project`: Live Demo URL 또는 GitHub URL 중 하나 필수, URL 형식 검증
   - 에러 필드 하이라이트 + 제출 후 에러 요약 카운트 표시
-  - 추가 완료 시 `localStorage`에 즉시 저장
+  - 추가 완료 시 **Firestore(`users/anonymous/links`)에 `createdAt`과 함께 저장** 및 최신순 목록 즉시 갱신
+- **FR-2.7 링크 수정 / 삭제 / 커서 드래그 순서 변경:**
+  - 각 링크 카드 우측 상단 미니 툴바를 통한 수정(모달 재활용) 및 즉시 삭제 (`users/anonymous/links/{id}` 동기화)
+  - 좌측 드래그 핸들(`GripVertical`) 및 커서 드래그 앤 드롭(`SortableLinkWrapper`)을 통한 링크 위치 이동 및 Firestore 일괄(`writeBatch`) 순서 저장
 
 ### 3.3 디자인 시스템 & 테마 (Design System & Themes)
 - **Tailwind CSS v4 기반 스타일 시스템 통일:**
@@ -89,7 +92,8 @@
     - `GitHubRepoCard`: GitHub Pinned Repo 카드 (Star, Fork, 언어 도트, 모노스페이스 폰트)
     - `TechStackCard`: 주력 기술 스택 태그 클러스터 (인터랙티브 뱃지)
     - `ProjectCard`: 프로덕션 프로젝트 쇼케이스 (태그 목록, Live Demo 및 GitHub Code 듀얼 액션)
-    - `AddLinkDialog`: 타입별 필드 분기 및 클라이언트 유효성 검사를 포함한 링크 추가 다이얼로그
+    - `AddLinkDialog`: 타입별 필드 분기 및 클라이언트 유효성 검사를 포함한 링크 추가/수정 겸용 다이얼로그
+    - `SortableLinkWrapper`: 커서 드래그 앤 드롭 순서 변경 및 수정/삭제 액션 툴바 래퍼
     - ~~`NowPlayingBar`~~: **제거됨** — 링크트리 페이지의 목적과 맞지 않는 Spotify 음악 재생 UI 요소 배제
 - **테마 확장성:** 기본 Spotify Dark 외 GitHub Dark, Monokai, Minimal Light 등 다중 테마 확장 구조 유지.
 
@@ -193,5 +197,7 @@ export interface BlockItem {
 
 ### Phase 3: 방문자 통계 & 백엔드 연동 (진행 중)
 - [x] Firebase SDK 설치 및 환경변수 기반 초기화 설정 (`src/lib/Firebase.ts`, `.env.local`)
+- [x] Firestore(`users/anonymous/links`) 마이그레이션 — 페이지 로드 시 `createdAt` 기준 최신순 조회, 추가 시 저장 및 목록 갱신 (`src/lib/firestoreLinks.ts`)
+- [x] 링크 수정 / 삭제 및 커서 드래그 앤 드롭 순서 변경 기능 구현 (`SortableLinkWrapper`)
 - [ ] 링크 클릭수 및 방문자 수(PV) 집계
-- [ ] Firebase / DB 연동 및 사용자 인증
+- [ ] 사용자 인증 연동 (`anonymous` → 로그인 사용자 UID 전환)

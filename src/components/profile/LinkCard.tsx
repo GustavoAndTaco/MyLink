@@ -13,6 +13,7 @@ export default function LinkCard({ block }: LinkCardProps) {
       href={block.url || "#"}
       target="_blank"
       rel="noopener noreferrer"
+      draggable={false}
       className="group flex items-center justify-between p-4 rounded-xl bg-spotify-surface border border-spotify-border hover:border-spotify-border-hover hover:bg-spotify-elevated transition-all duration-200 shadow-md cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
     >
       <div className="flex items-center gap-3.5 min-w-0 pr-3">
