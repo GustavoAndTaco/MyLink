@@ -36,14 +36,15 @@
 
 ## 3. 핵심 기능 요구사항 (Functional Requirements)
 
-### 3.1 로컬 스토리지 기반 프로필 데이터 (Profile Storage)
-- **FR-1.1 LocalStorage 읽기/쓰기:**
-  - 브라우저 로컬 스토리지(`mylink_profile_data`)에서 프로필 데이터와 블록 목록을 불러와 렌더링
-  - 최초 방문 시 완성도 높은 개발자 기본 Mock 데이터를 로컬 스토리지에 자동 초기화하여 즉시 표시
-- **FR-1.2 프로필 정보 구성:**
-  - 닉네임(Username), 표시 이름(Full Name), 직무/역할(Role), 한 줄 소개(Bio)
-  - 아바타/아이콘 및 인증된 개발자(Verified Developer) 배지
-  - 커밋 수, 레포지토리 수, Uptime 등 개발자 메트릭 정보
+### 3.1 Firestore 기반 프로필 및 링크 데이터 (Cloud Storage)
+- **FR-1.1 Firestore 읽기/쓰기 (`users/anonymous` & `users/anonymous/links`):**
+  - 더미 링크 시딩 없이 **링크가 비어 있는 초기 상태(`[]`)**로 시작
+  - `users/anonymous/links` 컬렉션에서 `createdAt` 기준 최신순으로 링크 목록 조회
+  - 링크 추가(`setDoc`), 수정(`updateDoc`), 삭제(`deleteDoc`), 순서 변경(`writeBatch`) 모두 Firestore와 실시간 동기화
+- **FR-1.2 프로필 정보 구성 & 인라인 편집:**
+  - 표시 이름(Full Name), 사진(Avatar - 이모지 또는 이미지 URL), 한 줄 소개(Bio)를 페이지 상단에서 직접 클릭하여 인라인으로 수정 가능 (`users/anonymous` 문서에 `updateDoc` 연동)
+  - 인증된 개발자(Verified Developer) 배지 및 Uptime 정보 표시
+  - **GitHub MyLink 실시간 지표 연동 (`/api/github`):** 프로필 하단 Commits 및 Repos 수치를 `GustavoAndTaco/MyLink` GitHub API와 실시간 연동
 
 ### 3.2 개발자 특화 콘텐츠 블록 (Developer Blocks)
 - **FR-2.1 일반 링크 카드 (URL Link):**
@@ -67,8 +68,8 @@
     - `project`: Live Demo URL 또는 GitHub URL 중 하나 필수, URL 형식 검증
   - 에러 필드 하이라이트 + 제출 후 에러 요약 카운트 표시
   - 추가 완료 시 **Firestore(`users/anonymous/links`)에 `createdAt`과 함께 저장** 및 최신순 목록 즉시 갱신
-- **FR-2.7 링크 수정 / 삭제 / 커서 드래그 순서 변경:**
-  - 각 링크 카드 우측 상단 미니 툴바를 통한 수정(모달 재활용) 및 즉시 삭제 (`users/anonymous/links/{id}` 동기화)
+- **FR-2.7 링크 수정 / 삭제(재확인) / 커서 드래그 순서 변경:**
+  - 각 링크 카드 우측 상단 미니 툴바를 통한 수정(모달 재활용, `updateDoc`) 및 삭제 (`DeleteConfirmDialog`에서 **"정말로 삭제하시겠습니까?"** 재확인 후 `deleteDoc` 실행)
   - 좌측 드래그 핸들(`GripVertical`) 및 커서 드래그 앤 드롭(`SortableLinkWrapper`)을 통한 링크 위치 이동 및 Firestore 일괄(`writeBatch`) 순서 저장
 
 ### 3.3 디자인 시스템 & 테마 (Design System & Themes)
@@ -199,5 +200,8 @@ export interface BlockItem {
 - [x] Firebase SDK 설치 및 환경변수 기반 초기화 설정 (`src/lib/Firebase.ts`, `.env.local`)
 - [x] Firestore(`users/anonymous/links`) 마이그레이션 — 페이지 로드 시 `createdAt` 기준 최신순 조회, 추가 시 저장 및 목록 갱신 (`src/lib/firestoreLinks.ts`)
 - [x] 링크 수정 / 삭제 및 커서 드래그 앤 드롭 순서 변경 기능 구현 (`SortableLinkWrapper`)
+- [x] 더미 데이터 제거 및 초기 빈 상태 전환, 삭제 시 재확인 다이얼로그(`DeleteConfirmDialog`) 적용
+- [x] `updateDoc` / `deleteDoc` 기반 링크 및 프로필 인라인 편집 Firestore 연동
+- [x] 프로필 Commits / Repos 지표 GitHub `GustavoAndTaco/MyLink` 저장소 실시간 연동 (`/api/github`)
 - [ ] 링크 클릭수 및 방문자 수(PV) 집계
 - [ ] 사용자 인증 연동 (`anonymous` → 로그인 사용자 UID 전환)

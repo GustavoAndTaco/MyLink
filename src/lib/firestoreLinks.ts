@@ -1,19 +1,26 @@
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
+  getDoc,
   getDocs,
   orderBy,
   query,
   setDoc,
+  updateDoc,
   writeBatch,
 } from "firebase/firestore";
 import { db } from "./Firebase";
-import { BlockItem } from "@/types";
+import { BlockItem, UserProfile } from "@/types";
 import { defaultProfileData } from "./mockData";
 
+const USER_DOC_PATH = ["users", "anonymous"] as const;
 const LINKS_COLLECTION_PATH = ["users", "anonymous", "links"] as const;
-const SEEDED_FLAG_KEY = "mylink_firestore_seeded";
+
+function getUserDocRef() {
+  return doc(db, ...USER_DOC_PATH);
+}
 
 function getLinksCollection() {
   return collection(db, ...LINKS_COLLECTION_PATH);
@@ -39,8 +46,53 @@ function stripUndefined<T>(obj: T): T {
 }
 
 /**
+ * users/anonymous 문서에서 사용자 프로필 정보를 조회합니다.
+ */
+export async function fetchUserProfileFromFirestore(): Promise<UserProfile | null> {
+  const userRef = getUserDocRef();
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) {
+    return null;
+  }
+  const data = snap.data();
+  return (data?.user as UserProfile) ?? null;
+}
+
+/**
+ * users/anonymous 문서의 사용자 프로필(이름, 아바타, 소개글 등)을 updateDoc으로 업데이트합니다.
+ * 문서가 아직 없는 최초 상태일 경우 기본 프로필 문서를 생성합니다.
+ */
+export async function updateUserProfileInFirestore(
+  updates: Partial<Pick<UserProfile, "fullName" | "avatar" | "bio" | "role">>
+): Promise<void> {
+  const userRef = getUserDocRef();
+  const snap = await getDoc(userRef);
+
+  if (!snap.exists()) {
+    await setDoc(userRef, {
+      user: stripUndefined({
+        ...defaultProfileData.user,
+        ...updates,
+      }),
+      updatedAt: Date.now(),
+    });
+    return;
+  }
+
+  const patchPayload: Record<string, unknown> = {
+    updatedAt: Date.now(),
+  };
+  for (const [key, value] of Object.entries(updates)) {
+    if (value !== undefined) {
+      patchPayload[`user.${key}`] = value;
+    }
+  }
+  await updateDoc(userRef, patchPayload);
+}
+
+/**
  * users/anonymous/links 컬렉션에서 링크 목록을 createdAt 기준 최신순(내림차순)으로 조회합니다.
- * 최초 방문(컬렉션 비어 있음 + 미시딩) 시 기본 Mock 데이터 10종을 시딩합니다.
+ * 데이터가 없으면 빈 배열([])을 반환합니다.
  */
 export async function fetchLinksFromFirestore(): Promise<BlockItem[]> {
   const linksRef = getLinksCollection();
@@ -48,23 +100,7 @@ export async function fetchLinksFromFirestore(): Promise<BlockItem[]> {
   const snapshot = await getDocs(q);
 
   if (snapshot.empty) {
-    const alreadySeeded =
-      typeof window !== "undefined" &&
-      localStorage.getItem(SEEDED_FLAG_KEY) === "true";
-
-    if (!alreadySeeded) {
-      const seeded = await seedDefaultLinksToFirestore();
-      if (typeof window !== "undefined") {
-        localStorage.setItem(SEEDED_FLAG_KEY, "true");
-      }
-      return seeded;
-    }
-
     return [];
-  }
-
-  if (typeof window !== "undefined") {
-    localStorage.setItem(SEEDED_FLAG_KEY, "true");
   }
 
   return snapshot.docs.map((docSnap) => ({
@@ -74,29 +110,7 @@ export async function fetchLinksFromFirestore(): Promise<BlockItem[]> {
 }
 
 /**
- * 기본 Mock 링크 10종을 createdAt 내림차순 정렬 시 기존 순서를 유지하도록 Firestore에 초기 시딩합니다.
- */
-async function seedDefaultLinksToFirestore(): Promise<BlockItem[]> {
-  const linksRef = getLinksCollection();
-  const batch = writeBatch(db);
-  const now = Date.now();
-  const seededBlocks: BlockItem[] = defaultProfileData.blocks.map((block, index) => ({
-    ...block,
-    createdAt: now - index * 1000,
-    order: index,
-  }));
-
-  for (const block of seededBlocks) {
-    const docRef = doc(linksRef, block.id);
-    batch.set(docRef, stripUndefined(block));
-  }
-
-  await batch.commit();
-  return seededBlocks;
-}
-
-/**
- * 새 링크를 users/anonymous/links/{id} 문서로 저장합니다. (createdAt 현재 시각 부여)
+ * 새 링크를 users/anonymous/links/{id} 문서로 저장합니다.
  */
 export async function addLinkToFirestore(block: BlockItem): Promise<BlockItem> {
   const linksRef = getLinksCollection();
@@ -110,21 +124,32 @@ export async function addLinkToFirestore(block: BlockItem): Promise<BlockItem> {
 }
 
 /**
- * 기존 링크 문서를 수정합니다.
+ * 기존 링크 문서를 updateDoc으로 수정합니다.
  */
 export async function updateLinkInFirestore(block: BlockItem): Promise<BlockItem> {
   const linksRef = getLinksCollection();
   const docRef = doc(linksRef, block.id);
-  const payload: BlockItem = {
-    ...block,
+
+  const payload: Record<string, unknown> = {
+    type: block.type,
+    title: block.title,
+    isActive: block.isActive,
     createdAt: block.createdAt ?? Date.now(),
+    subtitle: block.subtitle ? block.subtitle : deleteField(),
+    url: block.url ? block.url : deleteField(),
+    icon: block.icon ? block.icon : deleteField(),
+    badge: block.badge ? block.badge : deleteField(),
+    pinnedRepo: block.pinnedRepo ? stripUndefined(block.pinnedRepo) : deleteField(),
+    techStack: block.techStack ? block.techStack : deleteField(),
+    project: block.project ? stripUndefined(block.project) : deleteField(),
   };
-  await setDoc(docRef, stripUndefined(payload));
-  return payload;
+
+  await updateDoc(docRef, payload);
+  return block;
 }
 
 /**
- * 링크 문서를 삭제합니다.
+ * 링크 문서를 deleteDoc으로 삭제합니다.
  */
 export async function deleteLinkFromFirestore(id: string): Promise<void> {
   const linksRef = getLinksCollection();

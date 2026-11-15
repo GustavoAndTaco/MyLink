@@ -1,6 +1,6 @@
 "use client";
 
-import { BlockItem, ProfileData } from "@/types";
+import { BlockItem, ProfileData, UserProfile } from "@/types";
 import { useState } from "react";
 import ProfileHeader from "./profile/ProfileHeader";
 import LinkCard from "./profile/LinkCard";
@@ -8,8 +8,9 @@ import GitHubRepoCard from "./profile/GitHubRepoCard";
 import TechStackCard from "./profile/TechStackCard";
 import ProjectCard from "./profile/ProjectCard";
 import AddLinkDialog from "./profile/AddLinkDialog";
+import DeleteConfirmDialog from "./profile/DeleteConfirmDialog";
 import SortableLinkWrapper from "./profile/SortableLinkWrapper";
-import { Plus } from "lucide-react";
+import { Plus, Link2 } from "lucide-react";
 
 interface ProfileViewProps {
   data: ProfileData;
@@ -17,6 +18,9 @@ interface ProfileViewProps {
   onUpdateBlock: (block: BlockItem) => void;
   onDeleteBlock: (id: string) => void;
   onReorderBlocks: (blocks: BlockItem[]) => void;
+  onUpdateProfile: (
+    updates: Partial<Pick<UserProfile, "fullName" | "avatar" | "bio">>
+  ) => void;
 }
 
 export default function ProfileView({
@@ -25,10 +29,12 @@ export default function ProfileView({
   onUpdateBlock,
   onDeleteBlock,
   onReorderBlocks,
+  onUpdateProfile,
 }: ProfileViewProps) {
   const { user, theme, blocks, socialLinks } = data;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<BlockItem | null>(null);
+  const [deletingBlock, setDeletingBlock] = useState<BlockItem | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -47,6 +53,12 @@ export default function ProfileView({
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingBlock(null);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deletingBlock) return;
+    onDeleteBlock(deletingBlock.id);
+    setDeletingBlock(null);
   };
 
   const handleDrop = (dropIndex: number) => {
@@ -96,14 +108,27 @@ export default function ProfileView({
 
   return (
     <div className={`w-full min-h-screen flex flex-col ${getThemeWrapper()} pb-16 select-none antialiased`}>
-      {/* 1. 프로필 헤더 */}
-      <ProfileHeader user={user} socialLinks={socialLinks} theme={theme} />
+      {/* 1. 프로필 헤더 (이름, 사진, 소개글 인라인 편집 & GitHub 통계) */}
+      <ProfileHeader
+        user={user}
+        socialLinks={socialLinks}
+        theme={theme}
+        onUpdateProfile={onUpdateProfile}
+      />
 
       {/* 2. 링크 목록 컨테이너 */}
       <main className="flex-1 w-full max-w-xl mx-auto space-y-3.5 px-4 mt-6">
         {activeBlocks.length === 0 ? (
-          <div className="p-8 text-center rounded-xl bg-spotify-surface border border-spotify-border text-spotify-subtext text-sm">
-            등록된 링크가 없습니다.
+          <div className="p-10 text-center rounded-xl bg-spotify-surface border border-spotify-border text-spotify-subtext space-y-2.5">
+            <div className="w-10 h-10 rounded-full bg-zinc-800/80 border border-zinc-700 flex items-center justify-center mx-auto text-zinc-400">
+              <Link2 className="w-5 h-5" />
+            </div>
+            <p className="text-sm font-medium text-zinc-300">
+              아직 등록된 링크가 없습니다.
+            </p>
+            <p className="text-xs text-zinc-500">
+              아래 버튼을 눌러 첫 번째 링크를 추가해보세요.
+            </p>
           </div>
         ) : (
           activeBlocks.map((block, index) => (
@@ -122,7 +147,7 @@ export default function ProfileView({
                 setDragOverIndex(null);
               }}
               onEdit={() => handleOpenEdit(block)}
-              onDelete={() => onDeleteBlock(block.id)}
+              onDelete={() => setDeletingBlock(block)}
             >
               {renderBlockContent(block)}
             </SortableLinkWrapper>
@@ -184,6 +209,14 @@ export default function ProfileView({
         onClose={handleCloseDialog}
         onAdd={onAddBlock}
         onUpdate={onUpdateBlock}
+      />
+
+      {/* 4. 링크 삭제 확인 다이얼로그 */}
+      <DeleteConfirmDialog
+        isOpen={!!deletingBlock}
+        targetTitle={deletingBlock?.title}
+        onCancel={() => setDeletingBlock(null)}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );
