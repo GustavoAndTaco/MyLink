@@ -258,10 +258,10 @@ export default function ProfileHeader({
               </button>
             </div>
           ) : (
-            <div className="group/name inline-flex items-center justify-center gap-2">
+            <div className="group/name relative inline-flex items-center justify-center">
               <h1
                 onClick={() => setEditingField("fullName")}
-                className="text-2xl sm:text-3xl font-extrabold tracking-tight cursor-pointer hover:text-spotify-green transition-colors"
+                className="text-2xl sm:text-3xl font-extrabold tracking-tight cursor-pointer hover:text-spotify-green transition-colors text-center"
                 title="클릭하여 이름 수정"
               >
                 {user.fullName || user.role}
@@ -269,7 +269,7 @@ export default function ProfileHeader({
               <button
                 type="button"
                 onClick={() => setEditingField("fullName")}
-                className="p-1 rounded-full text-zinc-500 hover:text-spotify-green opacity-60 sm:opacity-0 sm:group-hover/name:opacity-100 transition-all"
+                className="absolute -right-7 top-1/2 -translate-y-1/2 p-1 rounded-full text-zinc-500 hover:text-spotify-green opacity-60 sm:opacity-0 sm:group-hover/name:opacity-100 transition-all"
                 title="이름 수정"
                 aria-label="이름 수정"
               >
@@ -318,13 +318,13 @@ export default function ProfileHeader({
           ) : (
             <div
               onClick={() => setEditingField("bio")}
-              className="group/bio relative inline-flex items-start justify-center gap-1.5 cursor-pointer rounded-lg px-2 py-1 hover:bg-white/5 transition-colors"
+              className="group/bio relative inline-block cursor-pointer rounded-lg px-3 py-1 hover:bg-white/5 transition-colors text-center"
               title="클릭하여 소개글 수정"
             >
-              <p className={`leading-relaxed text-xs sm:text-sm ${st.subtext}`}>
+              <p className={`leading-relaxed text-xs sm:text-sm ${st.subtext} text-center`}>
                 {user.bio || "소개글을 입력해보세요."}
               </p>
-              <Pencil className="w-3 h-3 text-zinc-500 group-hover/bio:text-spotify-green shrink-0 mt-1 opacity-60 sm:opacity-0 sm:group-hover/bio:opacity-100 transition-all" />
+              <Pencil className="w-3 h-3 text-zinc-500 group-hover/bio:text-spotify-green absolute -right-4 top-2 opacity-60 sm:opacity-0 sm:group-hover/bio:opacity-100 transition-all" />
             </div>
           )}
         </div>
