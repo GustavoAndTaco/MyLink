@@ -302,6 +302,7 @@ export async function updateLinkInFirestore(
     type: block.type,
     title: block.title,
     isActive: block.isActive,
+    clickCount: block.clickCount ?? 0,
     createdAt: block.createdAt ?? now,
     updatedAt: now,
     subtitle: block.subtitle ? block.subtitle : deleteField(),

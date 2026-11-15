@@ -184,8 +184,27 @@ function blockToForm(block: BlockItem): FormState {
 // ──────────────────────────────────────────────
 // BlockItem 빌더
 // ──────────────────────────────────────────────
+function hasUrlChanged(form: FormState, existing?: BlockItem | null): boolean {
+  if (!existing) return false;
+
+  if (form.type === "link" || form.type === "github_repo") {
+    return (existing.url ?? "").trim() !== form.url.trim();
+  }
+
+  if (form.type === "project") {
+    const prevDemo = (existing.project?.demoUrl ?? "").trim();
+    const prevGithub = (existing.project?.githubUrl ?? "").trim();
+    return prevDemo !== form.demoUrl.trim() || prevGithub !== form.githubUrl.trim();
+  }
+
+  return false;
+}
+
 function buildBlock(form: FormState, existing?: BlockItem | null): BlockItem {
   const id = existing?.id || `block-${Date.now()}`;
+  const shouldResetClicks = hasUrlChanged(form, existing);
+  const clickCount = shouldResetClicks ? 0 : (existing?.clickCount ?? 0);
+
   const base = {
     id,
     type: form.type,
@@ -195,6 +214,7 @@ function buildBlock(form: FormState, existing?: BlockItem | null): BlockItem {
     badge: form.badge.trim() || undefined,
     createdAt: existing?.createdAt ?? Date.now(),
     order: existing?.order,
+    clickCount,
     isActive: existing?.isActive ?? true,
   };
 
