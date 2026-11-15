@@ -1,9 +1,21 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { UserAccountInfo } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, Link2, LogOut, UserCheck } from "lucide-react";
+import {
+  ChevronDown,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  LayoutDashboard,
+  Link2,
+  LogOut,
+  UserCheck,
+  UserPen,
+} from "lucide-react";
 
 interface TopNavHeaderProps {
   account: UserAccountInfo | null;
@@ -14,6 +26,7 @@ interface TopNavHeaderProps {
   onLogout: () => void;
   onTogglePreview: () => void;
   onToggleSummary: () => void;
+  onOpenProfileEdit: () => void;
 }
 
 function GoogleMarkIcon({ className }: { className?: string }) {
@@ -48,12 +61,33 @@ export default function TopNavHeader({
   onLogout,
   onTogglePreview,
   onToggleSummary,
+  onOpenProfileEdit,
 }: TopNavHeaderProps) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const publicPageHref = account
+    ? `/${encodeURIComponent(account.displayName)}`
+    : "/";
+
   return (
     <nav className="sticky top-0 z-40 w-full border-b border-spotify-border bg-spotify-black/90 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4 sm:px-6">
         {/* 브랜드 로고 */}
-        <div className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-spotify-green text-black shadow-md">
             <Link2 className="h-4 w-4 stroke-[2.5]" />
           </div>
@@ -63,7 +97,7 @@ export default function TopNavHeader({
           <Badge variant="spotify" className="hidden sm:inline-flex">
             DEV
           </Badge>
-        </div>
+        </Link>
 
         {/* 우측 인증/액션 영역 */}
         <div className="flex items-center gap-2">
@@ -74,29 +108,15 @@ export default function TopNavHeader({
             </div>
           ) : account ? (
             <>
-              {/* 계정 요약 토글 버튼 */}
-              <button
-                type="button"
-                onClick={onToggleSummary}
-                className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
-                  isSummaryOpen
-                    ? "bg-spotify-elevated text-white ring-1 ring-spotify-green/60"
-                    : "bg-[#1f1f1f] text-zinc-200 hover:bg-spotify-elevated hover:text-white"
-                }`}
-                title="계정 요약 정보 보기"
+              {/* 헤더 개인별 페이지 바로가기 */}
+              <Link
+                href={publicPageHref}
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-[#1f1f1f] px-3.5 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-spotify-elevated hover:text-spotify-green transition-colors"
+                title={`/${account.displayName} 공개 페이지로 이동`}
               >
-                {account.photoURL ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={account.photoURL}
-                    alt={account.displayName}
-                    className="h-5 w-5 rounded-full object-cover"
-                  />
-                ) : (
-                  <UserCheck className="h-3.5 w-3.5 text-spotify-green" />
-                )}
-                <span className="max-w-[100px] truncate">{account.displayName}</span>
-              </button>
+                <ExternalLink className="h-3.5 w-3.5 text-spotify-green" />
+                <span>/{account.displayName}</span>
+              </Link>
 
               {/* 미리보기 토글 버튼 */}
               <button
@@ -122,16 +142,100 @@ export default function TopNavHeader({
                 )}
               </button>
 
-              {/* 로그아웃 버튼 */}
-              <button
-                type="button"
-                onClick={onLogout}
-                className="flex items-center gap-1.5 rounded-full border border-zinc-700 bg-[#1f1f1f] px-3.5 py-1.5 text-xs font-semibold text-zinc-300 transition-all hover:border-zinc-500 hover:text-white cursor-pointer"
-                title="로그아웃"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">로그아웃</span>
-              </button>
+              {/* 프로필 드롭다운 */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen((prev) => !prev)}
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                    isDropdownOpen
+                      ? "bg-spotify-elevated text-white ring-1 ring-spotify-green/60"
+                      : "bg-[#1f1f1f] text-zinc-200 hover:bg-spotify-elevated hover:text-white"
+                  }`}
+                  aria-expanded={isDropdownOpen}
+                  aria-haspopup="menu"
+                >
+                  {account.photoURL ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={account.photoURL}
+                      alt={account.displayName}
+                      className="h-5 w-5 rounded-full object-cover"
+                    />
+                  ) : (
+                    <UserCheck className="h-3.5 w-3.5 text-spotify-green" />
+                  )}
+                  <span className="max-w-[90px] truncate">{account.displayName}</span>
+                  <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
+                </button>
+
+                {isDropdownOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 mt-2 w-56 rounded-xl border border-spotify-border bg-spotify-surface p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.65)]"
+                  >
+                    <div className="px-3 py-2 border-b border-spotify-border mb-1">
+                      <p className="text-xs font-bold text-white truncate">
+                        {account.displayName}
+                      </p>
+                      <p className="text-[11px] text-spotify-subtext truncate">
+                        {account.email}
+                      </p>
+                    </div>
+
+                    <Link
+                      href={publicPageHref}
+                      onClick={() => setIsDropdownOpen(false)}
+                      role="menuitem"
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-spotify-elevated hover:text-spotify-green transition-colors"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5 text-spotify-green" />
+                      <span>내 공개 페이지 (/{account.displayName})</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        onOpenProfileEdit();
+                      }}
+                      className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-spotify-elevated hover:text-white transition-colors cursor-pointer"
+                    >
+                      <UserPen className="h-3.5 w-3.5 text-spotify-green" />
+                      <span>프로필 · 소셜 링크 편집</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        onToggleSummary();
+                      }}
+                      className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-spotify-elevated hover:text-white transition-colors cursor-pointer"
+                    >
+                      <LayoutDashboard className="h-3.5 w-3.5 text-spotify-green" />
+                      <span>{isSummaryOpen ? "계정 요약 숨기기" : "계정 요약 보기"}</span>
+                    </button>
+
+                    <div className="my-1 border-t border-spotify-border" />
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        onLogout();
+                      }}
+                      className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-[#f3727f] hover:bg-red-950/40 transition-colors cursor-pointer"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      <span>로그아웃</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <button

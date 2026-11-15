@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/Firebase";
-import { BlockItem, ProfileData, UserAccountInfo, UserProfile } from "@/types";
+import { BlockItem, ProfileData, SocialLinks, UserAccountInfo, UserProfile } from "@/types";
 import { defaultProfileData } from "@/lib/mockData";
 import {
   addLinkToFirestore,
@@ -18,6 +18,7 @@ import TopNavHeader from "@/components/TopNavHeader";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import LoggedOutView from "@/components/LoggedOutView";
 import ProfileView from "@/components/ProfileView";
+import ProfileEditDialog from "@/components/profile/ProfileEditDialog";
 import { useAppToast } from "@/components/ui/toast";
 
 export default function Home() {
@@ -28,6 +29,7 @@ export default function Home() {
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(true);
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -46,7 +48,7 @@ export default function Home() {
 
       setIsDataLoading(true);
       try {
-        const [{ userProfile, accountInfo }, links, githubRes] = await Promise.all([
+        const [{ userProfile, socialLinks, accountInfo }, links, githubRes] = await Promise.all([
           ensureUserDocInFirestore({
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -64,6 +66,7 @@ export default function Home() {
         setAccount(accountInfo);
         setProfileData((prev) => ({
           ...prev,
+          socialLinks,
           user: {
             ...prev.user,
             ...userProfile,
@@ -162,6 +165,42 @@ export default function Home() {
     } catch (error) {
       console.error("Firestore 프로필 수정 실패:", error);
       setProfileData((prev) => ({ ...prev, user: previousUser }));
+      toast.error("프로필 저장 중 오류가 발생했습니다");
+    }
+  };
+
+  const handleUpdateProfileAndSocials = async (
+    userUpdates: Partial<Pick<UserProfile, "fullName" | "avatar" | "bio" | "role">>,
+    socialUpdates: SocialLinks
+  ) => {
+    if (!account) return;
+    const previousUser = profileData.user;
+    const previousSocials = profileData.socialLinks;
+
+    setProfileData((prev) => ({
+      ...prev,
+      user: {
+        ...prev.user,
+        ...userUpdates,
+      },
+      socialLinks: socialUpdates,
+    }));
+
+    try {
+      const updatedAt = await updateUserProfileInFirestore(
+        account.uid,
+        userUpdates,
+        socialUpdates
+      );
+      setAccount((prev) => (prev ? { ...prev, updatedAt } : prev));
+      toast.success("프로필과 소셜 링크가 저장되었습니다");
+    } catch (error) {
+      console.error("Firestore 프로필 전체 수정 실패:", error);
+      setProfileData((prev) => ({
+        ...prev,
+        user: previousUser,
+        socialLinks: previousSocials,
+      }));
       toast.error("프로필 저장 중 오류가 발생했습니다");
     }
   };
@@ -276,23 +315,34 @@ export default function Home() {
         onLogout={handleLogout}
         onTogglePreview={handleTogglePreview}
         onToggleSummary={handleToggleSummary}
+        onOpenProfileEdit={() => setIsProfileEditOpen(true)}
       />
 
       {!account ? (
         <LoggedOutView onLogin={handleGoogleLogin} />
       ) : (
-        <ProfileView
-          data={profileData}
-          account={account}
-          isPreviewMode={isPreviewMode}
-          isSummaryOpen={isSummaryOpen}
-          onTogglePreview={handleTogglePreview}
-          onAddBlock={handleAddBlock}
-          onUpdateBlock={handleUpdateBlock}
-          onDeleteBlock={handleDeleteBlock}
-          onReorderBlocks={handleReorderBlocks}
-          onUpdateProfile={handleUpdateProfile}
-        />
+        <>
+          <ProfileView
+            data={profileData}
+            account={account}
+            isPreviewMode={isPreviewMode}
+            isSummaryOpen={isSummaryOpen}
+            onTogglePreview={handleTogglePreview}
+            onAddBlock={handleAddBlock}
+            onUpdateBlock={handleUpdateBlock}
+            onDeleteBlock={handleDeleteBlock}
+            onReorderBlocks={handleReorderBlocks}
+            onUpdateProfile={handleUpdateProfile}
+          />
+          <ProfileEditDialog
+            key={isProfileEditOpen ? "edit-open" : "edit-closed"}
+            isOpen={isProfileEditOpen}
+            user={profileData.user}
+            socialLinks={profileData.socialLinks}
+            onClose={() => setIsProfileEditOpen(false)}
+            onSave={handleUpdateProfileAndSocials}
+          />
+        </>
       )}
     </div>
   );

@@ -5,14 +5,16 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
   setDoc,
   updateDoc,
+  where,
   writeBatch,
 } from "firebase/firestore";
 import { db } from "./Firebase";
-import { BlockItem, UserAccountInfo, UserProfile } from "@/types";
+import { BlockItem, SocialLinks, UserAccountInfo, UserProfile } from "@/types";
 import { defaultProfileData } from "./mockData";
 
 function getUserDocRef(uid: string) {
@@ -58,6 +60,7 @@ function stripUndefined<T>(obj: T): T {
 
 export interface EnsureUserResult {
   userProfile: UserProfile;
+  socialLinks: SocialLinks;
   accountInfo: UserAccountInfo;
 }
 
@@ -84,18 +87,24 @@ export async function ensureUserDocInFirestore(authUser: {
       fullName: displayName,
       avatar: authUser.photoURL || defaultProfileData.user.avatar,
     });
+    const initialSocialLinks: SocialLinks = {
+      ...defaultProfileData.socialLinks,
+      email,
+    };
 
     await setDoc(userRef, {
       displayName,
       email,
       photoURL: authUser.photoURL ?? "",
       user: initialUserProfile,
+      socialLinks: stripUndefined(initialSocialLinks),
       createdAt: now,
       updatedAt: now,
     });
 
     return {
       userProfile: initialUserProfile,
+      socialLinks: initialSocialLinks,
       accountInfo: {
         uid: authUser.uid,
         email,
@@ -108,6 +117,7 @@ export async function ensureUserDocInFirestore(authUser: {
 
   const data = snap.data();
   const storedUser = (data?.user as Partial<UserProfile>) ?? {};
+  const storedSocials = (data?.socialLinks as SocialLinks) ?? defaultProfileData.socialLinks;
 
   await updateDoc(userRef, {
     displayName,
@@ -126,6 +136,7 @@ export async function ensureUserDocInFirestore(authUser: {
 
   return {
     userProfile: mergedUserProfile,
+    socialLinks: storedSocials,
     accountInfo: {
       uid: authUser.uid,
       email,
@@ -133,6 +144,49 @@ export async function ensureUserDocInFirestore(authUser: {
       photoURL: authUser.photoURL ?? undefined,
       updatedAt: now,
     },
+  };
+}
+
+export interface PublicProfileResult {
+  uid: string;
+  displayName: string;
+  userProfile: UserProfile;
+  socialLinks: SocialLinks;
+  links: BlockItem[];
+}
+
+/**
+ * displayName으로 Firestore users 컬렉션을 검색하고,
+ * 일치하는 사용자의 프로필과 users/{userId}/links 목록을 반환합니다.
+ */
+export async function fetchPublicUserByDisplayName(
+  displayName: string
+): Promise<PublicProfileResult | null> {
+  const usersRef = collection(db, "users");
+  const q = query(usersRef, where("displayName", "==", displayName), limit(1));
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const userDoc = snapshot.docs[0];
+  const data = userDoc.data();
+  const storedUser = (data?.user as Partial<UserProfile>) ?? {};
+  const storedSocials = (data?.socialLinks as SocialLinks) ?? defaultProfileData.socialLinks;
+  const links = await fetchLinksFromFirestore(userDoc.id);
+
+  return {
+    uid: userDoc.id,
+    displayName: (data?.displayName as string) || displayName,
+    userProfile: {
+      ...defaultProfileData.user,
+      ...storedUser,
+      username: storedUser.username || displayName,
+      fullName: storedUser.fullName || displayName,
+    },
+    socialLinks: storedSocials,
+    links,
   };
 }
 
@@ -157,7 +211,8 @@ export async function fetchUserProfileFromFirestore(
  */
 export async function updateUserProfileInFirestore(
   uid: string,
-  updates: Partial<Pick<UserProfile, "fullName" | "avatar" | "bio" | "role">>
+  updates: Partial<Pick<UserProfile, "fullName" | "avatar" | "bio" | "role">>,
+  socialLinks?: SocialLinks
 ): Promise<number> {
   const userRef = getUserDocRef(uid);
   const snap = await getDoc(userRef);
@@ -169,6 +224,7 @@ export async function updateUserProfileInFirestore(
         ...defaultProfileData.user,
         ...updates,
       }),
+      ...(socialLinks ? { socialLinks: stripUndefined(socialLinks) } : {}),
       createdAt: now,
       updatedAt: now,
     });
@@ -182,6 +238,9 @@ export async function updateUserProfileInFirestore(
     if (value !== undefined) {
       patchPayload[`user.${key}`] = value;
     }
+  }
+  if (socialLinks) {
+    patchPayload.socialLinks = stripUndefined(socialLinks);
   }
   await updateDoc(userRef, patchPayload);
   return now;
