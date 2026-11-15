@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ProfileData, UserProfile } from "@/types";
 import {
   CheckCircle2,
@@ -18,6 +18,7 @@ interface ProfileHeaderProps {
   user: ProfileData["user"];
   socialLinks: ProfileData["socialLinks"];
   theme: ProfileData["theme"];
+  isPreviewMode?: boolean;
   onUpdateProfile: (
     updates: Partial<Pick<UserProfile, "fullName" | "avatar" | "bio">>
   ) => void;
@@ -37,6 +38,7 @@ export default function ProfileHeader({
   user,
   socialLinks,
   theme,
+  isPreviewMode = false,
   onUpdateProfile,
 }: ProfileHeaderProps) {
   const [editingField, setEditingField] = useState<"avatar" | "fullName" | "bio" | null>(
@@ -46,11 +48,13 @@ export default function ProfileHeader({
   const [draftName, setDraftName] = useState(user.fullName);
   const [draftBio, setDraftBio] = useState(user.bio);
 
-  useEffect(() => {
+  const startEditing = (field: "avatar" | "fullName" | "bio") => {
+    if (isPreviewMode) return;
     setDraftAvatar(user.avatar);
     setDraftName(user.fullName);
     setDraftBio(user.bio);
-  }, [user.avatar, user.fullName, user.bio]);
+    setEditingField((prev) => (prev === field ? null : field));
+  };
 
   const handleSaveAvatar = () => {
     const trimmed = draftAvatar.trim();
@@ -131,12 +135,13 @@ export default function ProfileHeader({
         <div className="relative group">
           <button
             type="button"
-            onClick={() =>
-              setEditingField(editingField === "avatar" ? null : "avatar")
-            }
-            className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden flex items-center justify-center bg-zinc-800/80 border-2 border-spotify-green/70 text-5xl shadow-2xl transition-transform duration-300 group-hover:scale-105 cursor-pointer"
-            title="클릭하여 프로필 사진 수정"
-            aria-label="프로필 사진 수정"
+            onClick={() => startEditing("avatar")}
+            disabled={isPreviewMode}
+            className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden flex items-center justify-center bg-zinc-800/80 border-2 border-spotify-green/70 text-5xl shadow-2xl transition-transform duration-300 ${
+              isPreviewMode ? "cursor-default" : "group-hover:scale-105 cursor-pointer"
+            }`}
+            title={isPreviewMode ? undefined : "클릭하여 프로필 사진 수정"}
+            aria-label="프로필 사진"
           >
             {isImageUrl(user.avatar) ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -148,10 +153,12 @@ export default function ProfileHeader({
             ) : (
               <span>{user.avatar || "👨‍💻"}</span>
             )}
-            <span className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white">
-              <Camera className="w-5 h-5" />
-              <span className="text-[10px] font-semibold">사진 변경</span>
-            </span>
+            {!isPreviewMode && (
+              <span className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white">
+                <Camera className="w-5 h-5" />
+                <span className="text-[10px] font-semibold">사진 변경</span>
+              </span>
+            )}
           </button>
 
           {user.verified && (
@@ -260,21 +267,25 @@ export default function ProfileHeader({
           ) : (
             <div className="group/name relative inline-flex items-center justify-center">
               <h1
-                onClick={() => setEditingField("fullName")}
-                className="text-2xl sm:text-3xl font-extrabold tracking-tight cursor-pointer hover:text-spotify-green transition-colors text-center"
-                title="클릭하여 이름 수정"
+                onClick={() => startEditing("fullName")}
+                className={`text-2xl sm:text-3xl font-extrabold tracking-tight text-center ${
+                  isPreviewMode ? "" : "cursor-pointer hover:text-spotify-green transition-colors"
+                }`}
+                title={isPreviewMode ? undefined : "클릭하여 이름 수정"}
               >
                 {user.fullName || user.role}
               </h1>
-              <button
-                type="button"
-                onClick={() => setEditingField("fullName")}
-                className="absolute -right-7 top-1/2 -translate-y-1/2 p-1 rounded-full text-zinc-500 hover:text-spotify-green opacity-60 sm:opacity-0 sm:group-hover/name:opacity-100 transition-all"
-                title="이름 수정"
-                aria-label="이름 수정"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
+              {!isPreviewMode && (
+                <button
+                  type="button"
+                  onClick={() => startEditing("fullName")}
+                  className="absolute -right-7 top-1/2 -translate-y-1/2 p-1 rounded-full text-zinc-500 hover:text-spotify-green opacity-60 sm:opacity-0 sm:group-hover/name:opacity-100 transition-all"
+                  title="이름 수정"
+                  aria-label="이름 수정"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           )}
 
@@ -317,14 +328,18 @@ export default function ProfileHeader({
             </div>
           ) : (
             <div
-              onClick={() => setEditingField("bio")}
-              className="group/bio relative inline-block cursor-pointer rounded-lg px-3 py-1 hover:bg-white/5 transition-colors text-center"
-              title="클릭하여 소개글 수정"
+              onClick={() => startEditing("bio")}
+              className={`group/bio relative inline-block rounded-lg px-3 py-1 text-center ${
+                isPreviewMode ? "" : "cursor-pointer hover:bg-white/5 transition-colors"
+              }`}
+              title={isPreviewMode ? undefined : "클릭하여 소개글 수정"}
             >
               <p className={`leading-relaxed text-xs sm:text-sm ${st.subtext} text-center`}>
                 {user.bio || "소개글을 입력해보세요."}
               </p>
-              <Pencil className="w-3 h-3 text-zinc-500 group-hover/bio:text-spotify-green absolute -right-4 top-2 opacity-60 sm:opacity-0 sm:group-hover/bio:opacity-100 transition-all" />
+              {!isPreviewMode && (
+                <Pencil className="w-3 h-3 text-zinc-500 group-hover/bio:text-spotify-green absolute -right-4 top-2 opacity-60 sm:opacity-0 sm:group-hover/bio:opacity-100 transition-all" />
+              )}
             </div>
           )}
         </div>

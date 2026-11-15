@@ -1,33 +1,59 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BlockItem, ProfileData, UserProfile } from "@/types";
+import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/Firebase";
+import { BlockItem, ProfileData, UserAccountInfo, UserProfile } from "@/types";
 import { defaultProfileData } from "@/lib/mockData";
 import {
   addLinkToFirestore,
   deleteLinkFromFirestore,
+  ensureUserDocInFirestore,
   fetchLinksFromFirestore,
-  fetchUserProfileFromFirestore,
   reorderLinksInFirestore,
   updateLinkInFirestore,
   updateUserProfileInFirestore,
 } from "@/lib/firestoreLinks";
+import TopNavHeader from "@/components/TopNavHeader";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
+import LoggedOutView from "@/components/LoggedOutView";
 import ProfileView from "@/components/ProfileView";
-import { Loader2, AlertCircle } from "lucide-react";
+import { useAppToast } from "@/components/ui/toast";
 
 export default function Home() {
+  const toast = useAppToast();
+  const [account, setAccount] = useState<UserAccountInfo | null>(null);
   const [profileData, setProfileData] = useState<ProfileData>(defaultProfileData);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [isSummaryOpen, setIsSummaryOpen] = useState(true);
 
   useEffect(() => {
     let active = true;
 
-    async function loadInitialData() {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!active) return;
+
+      if (!firebaseUser) {
+        setAccount(null);
+        setProfileData(defaultProfileData);
+        setIsPreviewMode(false);
+        setIsAuthLoading(false);
+        setIsDataLoading(false);
+        return;
+      }
+
+      setIsDataLoading(true);
       try {
-        const [links, storedProfile, githubRes] = await Promise.all([
-          fetchLinksFromFirestore(),
-          fetchUserProfileFromFirestore(),
+        const [{ userProfile, accountInfo }, links, githubRes] = await Promise.all([
+          ensureUserDocInFirestore({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+          }),
+          fetchLinksFromFirestore(firebaseUser.uid),
           fetch("/api/github")
             .then((res) => (res.ok ? res.json() : null))
             .catch(() => null),
@@ -35,11 +61,12 @@ export default function Home() {
 
         if (!active) return;
 
+        setAccount(accountInfo);
         setProfileData((prev) => ({
           ...prev,
           user: {
             ...prev.user,
-            ...(storedProfile ?? {}),
+            ...userProfile,
             monthlyCommits:
               typeof githubRes?.commitsCount === "number" && githubRes.commitsCount > 0
                 ? githubRes.commitsCount
@@ -52,27 +79,75 @@ export default function Home() {
           blocks: links,
         }));
       } catch (error) {
-        console.error("초기 데이터 로드 실패:", error);
+        console.error("사용자 데이터 로드 실패:", error);
         if (active) {
-          setErrorMsg("Firestore에서 데이터를 불러오지 못했습니다.");
+          toast.error(
+            "데이터를 불러오지 못했습니다",
+            "Firestore 연결 및 권한을 확인해주세요."
+          );
         }
       } finally {
         if (active) {
-          setIsLoading(false);
+          setIsAuthLoading(false);
+          setIsDataLoading(false);
         }
       }
-    }
+    });
 
-    loadInitialData();
     return () => {
       active = false;
+      unsubscribe();
     };
-  }, []);
+  }, [toast]);
+
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const emailPrefix = result.user.email?.split("@")[0] || "developer";
+      toast.success("로그인되었습니다", `${emailPrefix}님, 환영합니다!`);
+    } catch (error) {
+      console.error("Google 로그인 실패:", error);
+      toast.error("로그인에 실패했습니다", "잠시 후 다시 시도해주세요.");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast.info("로그아웃되었습니다", "다시 이용하려면 Google 계정으로 로그인하세요.");
+    } catch (error) {
+      console.error("로그아웃 실패:", error);
+      toast.error("로그아웃 중 오류가 발생했습니다");
+    }
+  };
+
+  const handleTogglePreview = () => {
+    setIsPreviewMode((prev) => {
+      const next = !prev;
+      if (next) {
+        toast.info(
+          "방문자 미리보기 모드",
+          "편집 버튼이 숨겨지고 방문자 화면으로 표시됩니다."
+        );
+      } else {
+        toast.info("편집 모드로 전환되었습니다", "링크와 프로필을 자유롭게 수정하세요.");
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSummary = () => {
+    setIsSummaryOpen((prev) => {
+      const next = !prev;
+      toast.info(next ? "계정 요약 표시" : "계정 요약 숨김");
+      return next;
+    });
+  };
 
   const handleUpdateProfile = async (
     updates: Partial<Pick<UserProfile, "fullName" | "avatar" | "bio">>
   ) => {
-    setErrorMsg(null);
+    if (!account) return;
     const previousUser = profileData.user;
 
     setProfileData((prev) => ({
@@ -84,19 +159,23 @@ export default function Home() {
     }));
 
     try {
-      await updateUserProfileInFirestore(updates);
+      const updatedAt = await updateUserProfileInFirestore(account.uid, updates);
+      setAccount((prev) => (prev ? { ...prev, updatedAt } : prev));
+      toast.success("프로필이 저장되었습니다");
     } catch (error) {
       console.error("Firestore 프로필 수정 실패:", error);
-      setErrorMsg("프로필 저장 중 오류가 발생했습니다.");
       setProfileData((prev) => ({ ...prev, user: previousUser }));
+      toast.error("프로필 저장 중 오류가 발생했습니다");
     }
   };
 
   const handleAddBlock = async (newBlock: BlockItem) => {
-    setErrorMsg(null);
+    if (!account) return;
+    const now = Date.now();
     const blockWithTime: BlockItem = {
       ...newBlock,
-      createdAt: newBlock.createdAt ?? Date.now(),
+      createdAt: newBlock.createdAt ?? now,
+      updatedAt: now,
     };
 
     setProfileData((prev) => ({
@@ -105,21 +184,23 @@ export default function Home() {
     }));
 
     try {
-      await addLinkToFirestore(blockWithTime);
-      const refreshed = await fetchLinksFromFirestore();
+      await addLinkToFirestore(account.uid, blockWithTime);
+      const refreshed = await fetchLinksFromFirestore(account.uid);
       setProfileData((prev) => ({ ...prev, blocks: refreshed }));
+      setAccount((prev) => (prev ? { ...prev, updatedAt: Date.now() } : prev));
+      toast.success("새 링크가 추가되었습니다", blockWithTime.title);
     } catch (error) {
       console.error("Firestore 링크 추가 실패:", error);
-      setErrorMsg("링크 저장 중 오류가 발생했습니다.");
       setProfileData((prev) => ({
         ...prev,
         blocks: prev.blocks.filter((b) => b.id !== blockWithTime.id),
       }));
+      toast.error("링크 저장 중 오류가 발생했습니다");
     }
   };
 
   const handleUpdateBlock = async (updatedBlock: BlockItem) => {
-    setErrorMsg(null);
+    if (!account) return;
     const previousBlocks = profileData.blocks;
 
     setProfileData((prev) => ({
@@ -128,16 +209,22 @@ export default function Home() {
     }));
 
     try {
-      await updateLinkInFirestore(updatedBlock);
+      const saved = await updateLinkInFirestore(account.uid, updatedBlock);
+      setProfileData((prev) => ({
+        ...prev,
+        blocks: prev.blocks.map((b) => (b.id === saved.id ? saved : b)),
+      }));
+      setAccount((prev) => (prev ? { ...prev, updatedAt: saved.updatedAt } : prev));
+      toast.success("링크가 수정되었습니다", saved.title);
     } catch (error) {
       console.error("Firestore 링크 수정 실패:", error);
-      setErrorMsg("링크 수정 중 오류가 발생했습니다.");
       setProfileData((prev) => ({ ...prev, blocks: previousBlocks }));
+      toast.error("링크 수정 중 오류가 발생했습니다");
     }
   };
 
   const handleDeleteBlock = async (id: string) => {
-    setErrorMsg(null);
+    if (!account) return;
     const previousBlocks = profileData.blocks;
 
     setProfileData((prev) => ({
@@ -146,16 +233,18 @@ export default function Home() {
     }));
 
     try {
-      await deleteLinkFromFirestore(id);
+      await deleteLinkFromFirestore(account.uid, id);
+      setAccount((prev) => (prev ? { ...prev, updatedAt: Date.now() } : prev));
+      toast.info("링크가 삭제되었습니다");
     } catch (error) {
       console.error("Firestore 링크 삭제 실패:", error);
-      setErrorMsg("링크 삭제 중 오류가 발생했습니다.");
       setProfileData((prev) => ({ ...prev, blocks: previousBlocks }));
+      toast.error("링크 삭제 중 오류가 발생했습니다");
     }
   };
 
   const handleReorderBlocks = async (reordered: BlockItem[]) => {
-    setErrorMsg(null);
+    if (!account) return;
     const previousBlocks = profileData.blocks;
 
     setProfileData((prev) => ({
@@ -164,42 +253,50 @@ export default function Home() {
     }));
 
     try {
-      const updated = await reorderLinksInFirestore(reordered);
+      const updated = await reorderLinksInFirestore(account.uid, reordered);
       setProfileData((prev) => ({ ...prev, blocks: updated }));
+      setAccount((prev) => (prev ? { ...prev, updatedAt: Date.now() } : prev));
+      toast.success("링크 순서가 저장되었습니다");
     } catch (error) {
       console.error("Firestore 링크 순서 변경 실패:", error);
-      setErrorMsg("링크 순서 저장 중 오류가 발생했습니다.");
       setProfileData((prev) => ({ ...prev, blocks: previousBlocks }));
+      toast.error("링크 순서 저장 중 오류가 발생했습니다");
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-spotify-black flex items-center justify-center text-spotify-green font-mono text-sm">
-        <div className="flex items-center gap-2">
-          <Loader2 className="w-5 h-5 animate-spin text-spotify-green" />
-          <span>Firestore에서 데이터를 불러오는 중...</span>
-        </div>
-      </div>
-    );
+  if (isAuthLoading || isDataLoading) {
+    return <LoadingSkeleton />;
   }
 
   return (
-    <>
-      {errorMsg && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full bg-red-950/90 border border-red-800 text-red-200 text-xs shadow-lg backdrop-blur-sm">
-          <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
-      <ProfileView
-        data={profileData}
-        onAddBlock={handleAddBlock}
-        onUpdateBlock={handleUpdateBlock}
-        onDeleteBlock={handleDeleteBlock}
-        onReorderBlocks={handleReorderBlocks}
-        onUpdateProfile={handleUpdateProfile}
+    <div className="min-h-screen flex flex-col bg-spotify-black text-white">
+      <TopNavHeader
+        account={account}
+        isAuthLoading={isAuthLoading}
+        isPreviewMode={isPreviewMode}
+        isSummaryOpen={isSummaryOpen}
+        onLogin={handleGoogleLogin}
+        onLogout={handleLogout}
+        onTogglePreview={handleTogglePreview}
+        onToggleSummary={handleToggleSummary}
       />
-    </>
+
+      {!account ? (
+        <LoggedOutView onLogin={handleGoogleLogin} />
+      ) : (
+        <ProfileView
+          data={profileData}
+          account={account}
+          isPreviewMode={isPreviewMode}
+          isSummaryOpen={isSummaryOpen}
+          onTogglePreview={handleTogglePreview}
+          onAddBlock={handleAddBlock}
+          onUpdateBlock={handleUpdateBlock}
+          onDeleteBlock={handleDeleteBlock}
+          onReorderBlocks={handleReorderBlocks}
+          onUpdateProfile={handleUpdateProfile}
+        />
+      )}
+    </div>
   );
 }

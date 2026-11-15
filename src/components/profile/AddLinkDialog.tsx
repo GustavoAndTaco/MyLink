@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { BlockItem, BlockType } from "@/types";
 import { X, Plus, Pencil, Link2, FolderGit2, Cpu, Rocket, AlertCircle, CheckCircle2 } from "lucide-react";
 
@@ -314,17 +314,11 @@ export default function AddLinkDialog({
   onUpdate,
 }: AddLinkDialogProps) {
   const isEditMode = !!editingBlock;
-  const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const [form, setForm] = useState<FormState>(() =>
+    editingBlock ? blockToForm(editingBlock) : INITIAL_FORM
+  );
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      setForm(editingBlock ? blockToForm(editingBlock) : INITIAL_FORM);
-      setErrors({});
-      setSubmitted(false);
-    }
-  }, [isOpen, editingBlock]);
 
   const set = useCallback((key: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));

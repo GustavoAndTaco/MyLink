@@ -1,8 +1,9 @@
 "use client";
 
-import { BlockItem, ProfileData, UserProfile } from "@/types";
+import { BlockItem, ProfileData, UserAccountInfo, UserProfile } from "@/types";
 import { useState } from "react";
 import ProfileHeader from "./profile/ProfileHeader";
+import AccountSummaryCard from "./profile/AccountSummaryCard";
 import LinkCard from "./profile/LinkCard";
 import GitHubRepoCard from "./profile/GitHubRepoCard";
 import TechStackCard from "./profile/TechStackCard";
@@ -10,10 +11,14 @@ import ProjectCard from "./profile/ProjectCard";
 import AddLinkDialog from "./profile/AddLinkDialog";
 import DeleteConfirmDialog from "./profile/DeleteConfirmDialog";
 import SortableLinkWrapper from "./profile/SortableLinkWrapper";
-import { Plus, Link2 } from "lucide-react";
+import { Plus, Link2, Eye, ArrowLeft } from "lucide-react";
 
 interface ProfileViewProps {
   data: ProfileData;
+  account: UserAccountInfo;
+  isPreviewMode: boolean;
+  isSummaryOpen: boolean;
+  onTogglePreview: () => void;
   onAddBlock: (block: BlockItem) => void;
   onUpdateBlock: (block: BlockItem) => void;
   onDeleteBlock: (id: string) => void;
@@ -25,6 +30,10 @@ interface ProfileViewProps {
 
 export default function ProfileView({
   data,
+  account,
+  isPreviewMode,
+  isSummaryOpen,
+  onTogglePreview,
   onAddBlock,
   onUpdateBlock,
   onDeleteBlock,
@@ -107,17 +116,51 @@ export default function ProfileView({
   };
 
   return (
-    <div className={`w-full min-h-screen flex flex-col ${getThemeWrapper()} pb-16 select-none antialiased`}>
+    <div
+      className={`w-full flex-1 flex flex-col ${getThemeWrapper()} pb-16 select-none antialiased`}
+    >
+      {/* 미리보기 모드 안내 배너 */}
+      {isPreviewMode && (
+        <div className="w-full bg-spotify-green/15 border-b border-spotify-green/30 px-4 py-2.5">
+          <div className="mx-auto flex max-w-xl items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-spotify-green font-semibold">
+              <Eye className="h-4 w-4 shrink-0" />
+              <span>방문자 미리보기 모드 — 방문자에게 보이는 화면입니다.</span>
+            </div>
+            <button
+              type="button"
+              onClick={onTogglePreview}
+              className="inline-flex items-center gap-1 rounded-full bg-spotify-green px-3 py-1 text-[11px] font-bold text-black hover:bg-spotify-green-hover transition-colors cursor-pointer shrink-0"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              <span>편집으로 돌아가기</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 1. 프로필 헤더 (이름, 사진, 소개글 인라인 편집 & GitHub 통계) */}
       <ProfileHeader
         user={user}
         socialLinks={socialLinks}
         theme={theme}
+        isPreviewMode={isPreviewMode}
         onUpdateProfile={onUpdateProfile}
       />
 
       {/* 2. 링크 목록 컨테이너 */}
       <main className="flex-1 w-full max-w-xl mx-auto space-y-3.5 px-4 mt-6">
+        {/* 계정 요약 정보 카드 (편집 모드 & 요약 열림 상태일 때 표시) */}
+        {!isPreviewMode && isSummaryOpen && (
+          <AccountSummaryCard
+            account={account}
+            totalLinksCount={blocks.length}
+            activeLinksCount={activeBlocks.length}
+            isPreviewMode={isPreviewMode}
+            onTogglePreview={onTogglePreview}
+          />
+        )}
+
         {activeBlocks.length === 0 ? (
           <div className="p-10 text-center rounded-xl bg-spotify-surface border border-spotify-border text-spotify-subtext space-y-2.5">
             <div className="w-10 h-10 rounded-full bg-zinc-800/80 border border-zinc-700 flex items-center justify-center mx-auto text-zinc-400">
@@ -126,10 +169,16 @@ export default function ProfileView({
             <p className="text-sm font-medium text-zinc-300">
               아직 등록된 링크가 없습니다.
             </p>
-            <p className="text-xs text-zinc-500">
-              아래 버튼을 눌러 첫 번째 링크를 추가해보세요.
-            </p>
+            {!isPreviewMode && (
+              <p className="text-xs text-zinc-500">
+                아래 버튼을 눌러 첫 번째 링크를 추가해보세요.
+              </p>
+            )}
           </div>
+        ) : isPreviewMode ? (
+          activeBlocks.map((block) => (
+            <div key={block.id}>{renderBlockContent(block)}</div>
+          ))
         ) : (
           activeBlocks.map((block, index) => (
             <SortableLinkWrapper
@@ -154,15 +203,17 @@ export default function ProfileView({
           ))
         )}
 
-        {/* 링크 추가 버튼 */}
-        <button
-          onClick={handleOpenAdd}
-          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border-2 border-dashed border-zinc-700 hover:border-spotify-green/50 text-spotify-subtext hover:text-spotify-green transition-all duration-200 text-sm font-medium group"
-          aria-label="링크 추가"
-        >
-          <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
-          <span>링크 추가하기</span>
-        </button>
+        {/* 링크 추가 버튼 (편집 모드에서만 표시) */}
+        {!isPreviewMode && (
+          <button
+            onClick={handleOpenAdd}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border-2 border-dashed border-zinc-700 hover:border-spotify-green/50 text-spotify-subtext hover:text-spotify-green transition-all duration-200 text-sm font-medium group cursor-pointer"
+            aria-label="링크 추가"
+          >
+            <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <span>링크 추가하기</span>
+          </button>
+        )}
 
         {/* 푸터 */}
         <footer className="pt-6 pb-6 text-center text-xs text-spotify-subtext space-y-2">
@@ -204,6 +255,7 @@ export default function ProfileView({
 
       {/* 3. 링크 추가 / 수정 다이얼로그 */}
       <AddLinkDialog
+        key={editingBlock?.id ?? (isDialogOpen ? "new-open" : "new-closed")}
         isOpen={isDialogOpen}
         editingBlock={editingBlock}
         onClose={handleCloseDialog}

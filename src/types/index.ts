@@ -12,6 +12,14 @@ export interface UserProfile {
   uptime: string;
 }
 
+export interface UserAccountInfo {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL?: string;
+  updatedAt?: number;
+}
+
 export interface SocialLinks {
   github?: string;
   blog?: string;
@@ -45,6 +53,7 @@ export interface BlockItem {
   };
   order?: number;
   createdAt?: number;
+  updatedAt?: number;
   isActive: boolean;
 }
 
