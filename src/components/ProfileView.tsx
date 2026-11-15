@@ -1,25 +1,31 @@
 "use client";
 
-import { ProfileData } from "@/types";
+import { BlockItem, ProfileData } from "@/types";
 import { useState } from "react";
 import ProfileHeader from "./profile/ProfileHeader";
 import LinkCard from "./profile/LinkCard";
 import GitHubRepoCard from "./profile/GitHubRepoCard";
 import TechStackCard from "./profile/TechStackCard";
 import ProjectCard from "./profile/ProjectCard";
-import NowPlayingBar from "./profile/NowPlayingBar";
+import AddLinkDialog from "./profile/AddLinkDialog";
+import { Plus } from "lucide-react";
 
 interface ProfileViewProps {
   data: ProfileData;
+  onDataChange?: (data: ProfileData) => void;
 }
 
-export default function ProfileView({ data }: ProfileViewProps) {
+export default function ProfileView({ data, onDataChange }: ProfileViewProps) {
   const { user, theme, blocks, socialLinks } = data;
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const activeBlocks = blocks.filter((b) => b.isActive);
 
-  // 테마별 루트 래퍼 스타일 (Tailwind CSS 클래스 기반)
+  const handleAddBlock = (newBlock: BlockItem) => {
+    if (!onDataChange) return;
+    onDataChange({ ...data, blocks: [...data.blocks, newBlock] });
+  };
+
   const getThemeWrapper = () => {
     switch (theme) {
       case "github-dark":
@@ -35,17 +41,15 @@ export default function ProfileView({ data }: ProfileViewProps) {
   };
 
   return (
-    <div className={`w-full min-h-screen flex flex-col ${getThemeWrapper()} pb-28 select-none antialiased`}>
-      {/* 1. 프로필 헤더 (Hero 영역) */}
+    <div className={`w-full min-h-screen flex flex-col ${getThemeWrapper()} pb-16 select-none antialiased`}>
+      {/* 1. 프로필 헤더 */}
       <ProfileHeader
         user={user}
         socialLinks={socialLinks}
-        isPlaying={isPlaying}
-        onTogglePlay={() => setIsPlaying(!isPlaying)}
         theme={theme}
       />
 
-      {/* 2. 링크 목록 컨테이너 (Main Block List) */}
+      {/* 2. 링크 목록 컨테이너 */}
       <main className="flex-1 w-full max-w-xl mx-auto space-y-3.5 px-4 mt-6">
         {activeBlocks.length === 0 ? (
           <div className="p-8 text-center rounded-xl bg-spotify-surface border border-spotify-border text-spotify-subtext text-sm">
@@ -68,37 +72,32 @@ export default function ProfileView({ data }: ProfileViewProps) {
           })
         )}
 
-        {/* 푸터 영역 */}
-        <footer className="pt-8 pb-6 text-center text-xs text-spotify-subtext space-y-2">
+        {/* 링크 추가 버튼 */}
+        <button
+          onClick={() => setIsDialogOpen(true)}
+          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border-2 border-dashed border-zinc-700 hover:border-spotify-green/50 text-spotify-subtext hover:text-spotify-green transition-all duration-200 text-sm font-medium group"
+          aria-label="링크 추가"
+        >
+          <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+          <span>링크 추가하기</span>
+        </button>
+
+        {/* 푸터 */}
+        <footer className="pt-6 pb-6 text-center text-xs text-spotify-subtext space-y-2">
           <p>© 2026 {user.fullName || user.username} • Powered by MyLink</p>
           <div className="flex justify-center gap-4 text-xs">
             {socialLinks.github && (
-              <a
-                href={socialLinks.github}
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-white hover:underline transition-colors"
-              >
+              <a href={socialLinks.github} target="_blank" rel="noreferrer" className="hover:text-white hover:underline transition-colors">
                 GitHub
               </a>
             )}
             {socialLinks.blog && (
-              <a
-                href={socialLinks.blog}
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-white hover:underline transition-colors"
-              >
+              <a href={socialLinks.blog} target="_blank" rel="noreferrer" className="hover:text-white hover:underline transition-colors">
                 Blog
               </a>
             )}
             {socialLinks.linkedin && (
-              <a
-                href={socialLinks.linkedin}
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-white hover:underline transition-colors"
-              >
+              <a href={socialLinks.linkedin} target="_blank" rel="noreferrer" className="hover:text-white hover:underline transition-colors">
                 LinkedIn
               </a>
             )}
@@ -106,14 +105,12 @@ export default function ProfileView({ data }: ProfileViewProps) {
         </footer>
       </main>
 
-      {/* 3. 하단 Spotify 시그니처 Now Playing 바 */}
-      {theme === "spotify-dark" && (
-        <NowPlayingBar
-          role={user.role}
-          isPlaying={isPlaying}
-          onTogglePlay={() => setIsPlaying(!isPlaying)}
-        />
-      )}
+      {/* 3. 링크 추가 다이얼로그 */}
+      <AddLinkDialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        onAdd={handleAddBlock}
+      />
     </div>
   );
 }

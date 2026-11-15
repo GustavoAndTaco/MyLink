@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ProfileData } from "@/types";
-import { getStoredProfile } from "@/lib/storage";
+import { getStoredProfile, saveStoredProfile } from "@/lib/storage";
 import { defaultProfileData } from "@/lib/mockData";
 import ProfileView from "@/components/ProfileView";
 import { Loader2 } from "lucide-react";
@@ -12,11 +12,15 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 클라이언트 사이드에서 로컬 스토리지의 프로필 데이터 로드
     const data = getStoredProfile();
     setProfileData(data);
     setIsLoading(false);
   }, []);
+
+  const handleDataChange = (updated: ProfileData) => {
+    setProfileData(updated);
+    saveStoredProfile(updated);
+  };
 
   if (isLoading) {
     return (
@@ -29,5 +33,5 @@ export default function Home() {
     );
   }
 
-  return <ProfileView data={profileData} />;
+  return <ProfileView data={profileData} onDataChange={handleDataChange} />;
 }

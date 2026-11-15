@@ -55,6 +55,17 @@
   - 프로젝트 제목, 서브텍스트, 태그 목록, [Live Demo] 및 [GitHub Code] 링크 버튼
 - **FR-2.5 소셜 아이콘 바 (Social Links):**
   - GitHub, Velog/Blog, LinkedIn, Email 등의 바로가기 링크
+- **FR-2.6 링크 추가 다이얼로그 (Add Link Dialog):**
+  - 링크 목록 하단 "링크 추가하기" 버튼 클릭 시 다이얼로그(모달) 팝업
+  - 블록 유형 선택 (일반 링크 / GitHub 저장소 / 기술 스택 / 프로젝트) — 타입 전환 시 하위 필드 동적 렌더링
+  - 타입별 입력 검증 (클라이언트 사이드):
+    - 공통: 제목(필수·2~80자), 설명(120자 이하), 뱃지(20자 이하)
+    - `link`: URL 필수, `https://` 형식 검증
+    - `github_repo`: 저장소 URL 필수, 저장소 이름 `user/repo` 형식 검증, Star·Fork 숫자 검증, HEX 색상 검증
+    - `tech_stack`: 쉼표 구분 목록 필수, 최소 1개·최대 20개 제한, 실시간 뱃지 미리보기
+    - `project`: Live Demo URL 또는 GitHub URL 중 하나 필수, URL 형식 검증
+  - 에러 필드 하이라이트 + 제출 후 에러 요약 카운트 표시
+  - 추가 완료 시 `localStorage`에 즉시 저장
 
 ### 3.3 디자인 시스템 & 테마 (Design System & Themes)
 - **Tailwind CSS v4 기반 스타일 시스템 통일:**
@@ -72,12 +83,13 @@
   - `lucide-react` 및 커스텀 SVG(GitHub, LinkedIn) 기반의 일관된 고품질 벡터 아이콘 체계 구축.
 - **컴포넌트 아키텍처 (Component Architecture):**
   - 단일 페이지 내 관심사를 분리한 모듈식 컴포넌트 아키텍처 채택:
-    - `ProfileHeader`: 아바타, 실시간 펄스 효과의 Verified 배지, 개발자 메트릭(Commits, Repos, Uptime), Contact 및 음악 제어 버튼, 소셜 링크 바
+    - `ProfileHeader`: 아바타, 실시간 펄스 효과의 Verified 배지, 개발자 메트릭(Commits, Repos, Uptime), Contact 버튼, 소셜 링크 바 (**음악 재생/일시정지 버튼 및 Now Playing 바 제외**)
     - `LinkCard`: 일반 링크 블록 (Notion, 블로그, 강연, 커피챗, 뉴스레터 등) + 호버 애니메이션
     - `GitHubRepoCard`: GitHub Pinned Repo 카드 (Star, Fork, 언어 도트, 모노스페이스 폰트)
     - `TechStackCard`: 주력 기술 스택 태그 클러스터 (인터랙티브 뱃지)
     - `ProjectCard`: 프로덕션 프로젝트 쇼케이스 (태그 목록, Live Demo 및 GitHub Code 듀얼 액션)
-    - `NowPlayingBar`: 하단 고정형 Spotify 감성 Now Playing 미니 플레이어 (트랙 정보, 하트 토글, 재생 바)
+    - `AddLinkDialog`: 타입별 필드 분기 및 클라이언트 유효성 검사를 포함한 링크 추가 다이얼로그
+    - ~~`NowPlayingBar`~~: **제거됨** — 링크트리 페이지의 목적과 맞지 않는 Spotify 음악 재생 UI 요소 배제
 - **테마 확장성:** 기본 Spotify Dark 외 GitHub Dark, Monokai, Minimal Light 등 다중 테마 확장 구조 유지.
 
 ---
@@ -164,11 +176,13 @@ export interface BlockItem {
 - [x] LocalStorage 헬퍼 및 Mock 데이터 구성
 - [x] 10종의 개발자 특화 링크 목록 더미 데이터 및 카테고리별 샘플 템플릿 작성 (`src/lib/mockData.ts`)
 - [x] Tailwind CSS v4 테마 토큰(`--color-spotify-*`) 기반 스타일링 통일
-- [x] 모듈식 컴포넌트 아키텍처 분리 (`ProfileHeader`, `LinkCard`, `GitHubRepoCard`, `TechStackCard`, `ProjectCard`, `NowPlayingBar`)
+- [x] 모듈식 컴포넌트 아키텍처 분리 (`ProfileHeader`, `LinkCard`, `GitHubRepoCard`, `TechStackCard`, `ProjectCard`, `AddLinkDialog`)
 - [x] 4대 핵심 블록(일반 링크, GitHub Pinned Repo, 기술 스택, 프로젝트 쇼케이스) UI 고도화
 - [x] Lucide React 및 커스텀 SVG 기반 통일된 아이콘 시스템 적용
 - [x] 반응형 및 모바일 최적화 레이아웃 완성
-- [x] PRD 문서화 및 단일 링크 목록 페이지 집중 전략 반영 (`docs/PRD.md`)
+- [x] 음악 재생/일시정지 버튼 및 하단 Now Playing 바 제거 (링크트리 목적에 부합하지 않는 UI 배제)
+- [x] 링크 추가 다이얼로그(`AddLinkDialog`) 구현 — 타입별 필드 분기, 클라이언트 유효성 검사, localStorage 즉시 저장
+- [x] PRD 문서화 반영 (`docs/PRD.md`)
 
 ### Phase 2: 관리자 대시보드 (추후 진행)
 - [ ] shadcn/ui 컴포넌트(Form, Dialog, Dropdown, Tabs 등)를 활용한 관리자 대시보드 구축

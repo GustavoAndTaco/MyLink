@@ -1,31 +1,21 @@
 "use client";
 
 import { ProfileData } from "@/types";
-import { CheckCircle2, Play, Pause, Mail, Globe, Radio } from "lucide-react";
+import { CheckCircle2, Mail, Globe, Radio } from "lucide-react";
 import { GithubIcon, LinkedinIcon } from "@/components/icons/SocialIcons";
 
 interface ProfileHeaderProps {
   user: ProfileData["user"];
   socialLinks: ProfileData["socialLinks"];
-  isPlaying: boolean;
-  onTogglePlay: () => void;
   theme: ProfileData["theme"];
 }
 
-export default function ProfileHeader({
-  user,
-  socialLinks,
-  isPlaying,
-  onTogglePlay,
-  theme,
-}: ProfileHeaderProps) {
-  // 테마별 헤더 배경 및 액센트 스타일 (Tailwind CSS 클래스)
+export default function ProfileHeader({ user, socialLinks, theme }: ProfileHeaderProps) {
   const getHeaderStyle = () => {
     switch (theme) {
       case "github-dark":
         return {
           glow: "bg-gradient-to-b from-[#161b22] to-[#0d1117]",
-          accentBtn: "bg-[#238636] hover:bg-[#2ea043] text-white",
           pillBtn: "border border-zinc-700 hover:border-zinc-500 text-zinc-300",
           highlight: "text-blue-400",
           subtext: "text-zinc-400",
@@ -34,7 +24,6 @@ export default function ProfileHeader({
       case "monokai":
         return {
           glow: "bg-gradient-to-b from-[#3e3d32] to-[#272822]",
-          accentBtn: "bg-[#a6e22e] hover:bg-[#bbf444] text-[#272822]",
           pillBtn: "border border-[#f92672] text-[#f92672] hover:bg-[#f92672] hover:text-white",
           highlight: "text-[#66d9ef]",
           subtext: "text-zinc-400",
@@ -43,7 +32,6 @@ export default function ProfileHeader({
       case "minimal-light":
         return {
           glow: "bg-gradient-to-b from-white to-zinc-50",
-          accentBtn: "bg-zinc-900 hover:bg-black text-white",
           pillBtn: "border border-zinc-300 hover:border-zinc-700 text-zinc-800",
           highlight: "text-blue-600",
           subtext: "text-zinc-600",
@@ -53,7 +41,6 @@ export default function ProfileHeader({
       default:
         return {
           glow: "bg-gradient-to-b from-[#253828] via-[#162218] to-spotify-black",
-          accentBtn: "bg-spotify-green hover:bg-spotify-green-hover text-black shadow-lg shadow-spotify-green/20",
           pillBtn: "border border-spotify-pill-border hover:border-white text-white hover:bg-white/5",
           highlight: "text-spotify-green",
           subtext: "text-spotify-subtext",
@@ -102,9 +89,7 @@ export default function ProfileHeader({
         </p>
 
         {/* 개발자 주요 지표 통계 (Stats) */}
-        <div
-          className={`flex flex-wrap items-center justify-center gap-3 pt-1 text-xs ${st.subtext}`}
-        >
+        <div className={`flex flex-wrap items-center justify-center gap-3 pt-1 text-xs ${st.subtext}`}>
           <span className="flex items-center gap-1">
             <strong className="text-white font-semibold">{user.monthlyCommits}</strong> Commits
           </span>
@@ -119,20 +104,8 @@ export default function ProfileHeader({
           </span>
         </div>
 
-        {/* 액션 버튼군 (재생 토글 & Contact) */}
-        <div className="flex items-center justify-center gap-3 pt-2">
-          <button
-            onClick={onTogglePlay}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 ${st.accentBtn}`}
-            title={isPlaying ? "Pause music" : "Play music"}
-            aria-label={isPlaying ? "음악 일시정지" : "음악 재생"}
-          >
-            {isPlaying ? (
-              <Pause className="w-5 h-5 fill-current" />
-            ) : (
-              <Play className="w-5 h-5 fill-current ml-0.5" />
-            )}
-          </button>
+        {/* Contact 버튼 */}
+        <div className="flex items-center justify-center pt-2">
           <a
             href={`mailto:${socialLinks.email || "developer@example.com"}`}
             className={`px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 ${st.pillBtn}`}
