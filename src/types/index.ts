@@ -52,6 +52,7 @@ export interface BlockItem {
     tags: string[];
   };
   order?: number;
+  clickCount?: number;
   createdAt?: number;
   updatedAt?: number;
   isActive: boolean;

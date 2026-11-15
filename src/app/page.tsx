@@ -10,6 +10,7 @@ import {
   deleteLinkFromFirestore,
   ensureUserDocInFirestore,
   fetchLinksFromFirestore,
+  incrementLinkClickInFirestore,
   reorderLinksInFirestore,
   updateLinkInFirestore,
   updateUserProfileInFirestore,
@@ -300,6 +301,19 @@ export default function Home() {
     }
   };
 
+  const handleTrackClick = (blockId: string) => {
+    if (!account) return;
+    setProfileData((prev) => ({
+      ...prev,
+      blocks: prev.blocks.map((b) =>
+        b.id === blockId ? { ...b, clickCount: (b.clickCount ?? 0) + 1 } : b
+      ),
+    }));
+    incrementLinkClickInFirestore(account.uid, blockId).catch((error) => {
+      console.error("클릭 카운트 저장 실패:", error);
+    });
+  };
+
   if (isAuthLoading || isDataLoading) {
     return <LoadingSkeleton />;
   }
@@ -332,6 +346,7 @@ export default function Home() {
             onUpdateBlock={handleUpdateBlock}
             onDeleteBlock={handleDeleteBlock}
             onReorderBlocks={handleReorderBlocks}
+            onTrackClick={handleTrackClick}
             onUpdateProfile={handleUpdateProfile}
           />
           <ProfileEditDialog

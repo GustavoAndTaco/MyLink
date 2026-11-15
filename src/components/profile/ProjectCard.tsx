@@ -1,14 +1,15 @@
 "use client";
 
 import { BlockItem } from "@/types";
-import { Rocket, ExternalLink } from "lucide-react";
+import { Rocket, ExternalLink, MousePointerClick } from "lucide-react";
 import { GithubIcon } from "@/components/icons/SocialIcons";
 
 interface ProjectCardProps {
   block: BlockItem;
+  onLinkClick?: () => void;
 }
 
-export default function ProjectCard({ block }: ProjectCardProps) {
+export default function ProjectCard({ block, onLinkClick }: ProjectCardProps) {
   const proj = block.project;
 
   return (
@@ -25,11 +26,20 @@ export default function ProjectCard({ block }: ProjectCardProps) {
             </p>
           )}
         </div>
-        {block.badge && (
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-800/60 shrink-0">
-            {block.badge}
+        <div className="flex items-center gap-2 shrink-0">
+          <span
+            className="inline-flex items-center gap-1 text-[11px] font-mono text-spotify-subtext"
+            title="누적 클릭수"
+          >
+            <MousePointerClick className="w-3 h-3 text-spotify-green" />
+            <span>{(block.clickCount ?? 0).toLocaleString()}</span>
           </span>
-        )}
+          {block.badge && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-800/60">
+              {block.badge}
+            </span>
+          )}
+        </div>
       </div>
 
       {proj?.tags && proj.tags.length > 0 && (
@@ -51,6 +61,7 @@ export default function ProjectCard({ block }: ProjectCardProps) {
             href={proj.demoUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => onLinkClick?.()}
             className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-bold bg-spotify-green hover:bg-spotify-green-hover text-black transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shadow-sm"
           >
             <span>Live Demo</span>
@@ -62,6 +73,7 @@ export default function ProjectCard({ block }: ProjectCardProps) {
             href={proj.githubUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => onLinkClick?.()}
             className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-full text-xs font-bold border border-zinc-700 hover:border-white text-white hover:bg-white/5 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
           >
             <GithubIcon className="w-3.5 h-3.5" />

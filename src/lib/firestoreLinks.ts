@@ -5,6 +5,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  increment,
   limit,
   orderBy,
   query,
@@ -277,6 +278,7 @@ export async function addLinkToFirestore(
   const now = Date.now();
   const payload: BlockItem = {
     ...block,
+    clickCount: block.clickCount ?? 0,
     createdAt: block.createdAt ?? now,
     updatedAt: now,
   };
@@ -324,6 +326,21 @@ export async function deleteLinkFromFirestore(uid: string, id: string): Promise<
   const docRef = doc(linksRef, id);
   await deleteDoc(docRef);
   await updateDoc(getUserDocRef(uid), { updatedAt: Date.now() }).catch(() => {});
+}
+
+/**
+ * 링크 클릭 시 Firestore의 clickCount를 1 증가시킵니다.
+ */
+export async function incrementLinkClickInFirestore(
+  uid: string,
+  id: string
+): Promise<void> {
+  const linksRef = getLinksCollection(uid);
+  const docRef = doc(linksRef, id);
+  await updateDoc(docRef, {
+    clickCount: increment(1),
+    updatedAt: Date.now(),
+  });
 }
 
 /**

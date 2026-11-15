@@ -1,19 +1,21 @@
 "use client";
 
 import { BlockItem } from "@/types";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, MousePointerClick } from "lucide-react";
 
 interface LinkCardProps {
   block: BlockItem;
+  onLinkClick?: () => void;
 }
 
-export default function LinkCard({ block }: LinkCardProps) {
+export default function LinkCard({ block, onLinkClick }: LinkCardProps) {
   return (
     <a
       href={block.url || "#"}
       target="_blank"
       rel="noopener noreferrer"
       draggable={false}
+      onClick={() => onLinkClick?.()}
       className="group flex items-center justify-between p-4 rounded-xl bg-spotify-surface border border-spotify-border hover:border-spotify-border-hover hover:bg-spotify-elevated transition-all duration-200 shadow-md cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
     >
       <div className="flex items-center gap-3.5 min-w-0 pr-3">
@@ -32,6 +34,13 @@ export default function LinkCard({ block }: LinkCardProps) {
         </div>
       </div>
       <div className="flex items-center gap-2.5 shrink-0">
+        <span
+          className="inline-flex items-center gap-1 text-[11px] font-mono text-spotify-subtext"
+          title="누적 클릭수"
+        >
+          <MousePointerClick className="w-3 h-3 text-spotify-green" />
+          <span>{(block.clickCount ?? 0).toLocaleString()}</span>
+        </span>
         {block.badge && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
             {block.badge}

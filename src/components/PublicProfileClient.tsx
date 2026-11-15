@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   fetchPublicUserByDisplayName,
+  incrementLinkClickInFirestore,
   type PublicProfileResult,
 } from "@/lib/firestoreLinks";
 import { BlockItem } from "@/types";
@@ -93,16 +94,31 @@ export default function PublicProfileClient({ params }: PublicProfileClientProps
 
   const activeBlocks = profile.links.filter((b) => b.isActive);
 
+  const handleTrackClick = (blockId: string) => {
+    setProfile((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        links: prev.links.map((b) =>
+          b.id === blockId ? { ...b, clickCount: (b.clickCount ?? 0) + 1 } : b
+        ),
+      };
+    });
+    incrementLinkClickInFirestore(profile.uid, blockId).catch(() => {});
+  };
+
   const renderBlockContent = (block: BlockItem) => {
+    const handleClick = () => handleTrackClick(block.id);
+
     switch (block.type) {
       case "link":
-        return <LinkCard block={block} />;
+        return <LinkCard block={block} onLinkClick={handleClick} />;
       case "github_repo":
-        return <GitHubRepoCard block={block} />;
+        return <GitHubRepoCard block={block} onLinkClick={handleClick} />;
       case "tech_stack":
         return <TechStackCard block={block} />;
       case "project":
-        return <ProjectCard block={block} />;
+        return <ProjectCard block={block} onLinkClick={handleClick} />;
       default:
         return null;
     }

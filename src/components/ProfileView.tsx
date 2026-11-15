@@ -4,6 +4,7 @@ import { BlockItem, ProfileData, UserAccountInfo, UserProfile } from "@/types";
 import { useState } from "react";
 import ProfileHeader from "./profile/ProfileHeader";
 import AccountSummaryCard from "./profile/AccountSummaryCard";
+import StatsSection from "./profile/StatsSection";
 import LinkCard from "./profile/LinkCard";
 import GitHubRepoCard from "./profile/GitHubRepoCard";
 import TechStackCard from "./profile/TechStackCard";
@@ -23,6 +24,7 @@ interface ProfileViewProps {
   onUpdateBlock: (block: BlockItem) => void;
   onDeleteBlock: (id: string) => void;
   onReorderBlocks: (blocks: BlockItem[]) => void;
+  onTrackClick?: (blockId: string) => void;
   onUpdateProfile: (
     updates: Partial<Pick<UserProfile, "fullName" | "avatar" | "bio">>
   ) => void;
@@ -38,6 +40,7 @@ export default function ProfileView({
   onUpdateBlock,
   onDeleteBlock,
   onReorderBlocks,
+  onTrackClick,
   onUpdateProfile,
 }: ProfileViewProps) {
   const { user, theme, blocks, socialLinks } = data;
@@ -101,15 +104,17 @@ export default function ProfileView({
   };
 
   const renderBlockContent = (block: BlockItem) => {
+    const handleClick = () => onTrackClick?.(block.id);
+
     switch (block.type) {
       case "link":
-        return <LinkCard block={block} />;
+        return <LinkCard block={block} onLinkClick={handleClick} />;
       case "github_repo":
-        return <GitHubRepoCard block={block} />;
+        return <GitHubRepoCard block={block} onLinkClick={handleClick} />;
       case "tech_stack":
         return <TechStackCard block={block} />;
       case "project":
-        return <ProjectCard block={block} />;
+        return <ProjectCard block={block} onLinkClick={handleClick} />;
       default:
         return null;
     }
@@ -160,6 +165,9 @@ export default function ProfileView({
             onTogglePreview={onTogglePreview}
           />
         )}
+
+        {/* 마이페이지 통계 섹션 (편집 모드에서 표시) */}
+        {!isPreviewMode && <StatsSection blocks={blocks} />}
 
         {activeBlocks.length === 0 ? (
           <div className="p-10 text-center rounded-xl bg-spotify-surface border border-spotify-border text-spotify-subtext space-y-2.5">

@@ -10,7 +10,12 @@ service cloud.firestore {
       // 개인화된 링크 목록: users/{userId}/links
       match /links/{linkId} {
         allow read: if true;
-        allow write: if request.auth != null && request.auth.uid == userId;
+        allow create, delete: if request.auth != null && request.auth.uid == userId;
+        allow update: if (request.auth != null && request.auth.uid == userId)
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clickCount', 'updatedAt'])
+            && request.resource.data.clickCount == (resource.data.get('clickCount', 0) + 1)
+          );
       }
 
       // 개인화된 프로필 서브컬렉션: users/{userId}/profile

@@ -1,13 +1,14 @@
 "use client";
 
 import { BlockItem } from "@/types";
-import { FolderGit2, Star, GitFork, ExternalLink } from "lucide-react";
+import { FolderGit2, Star, GitFork, ExternalLink, MousePointerClick } from "lucide-react";
 
 interface GitHubRepoCardProps {
   block: BlockItem;
+  onLinkClick?: () => void;
 }
 
-export default function GitHubRepoCard({ block }: GitHubRepoCardProps) {
+export default function GitHubRepoCard({ block, onLinkClick }: GitHubRepoCardProps) {
   const repo = block.pinnedRepo;
 
   return (
@@ -16,6 +17,7 @@ export default function GitHubRepoCard({ block }: GitHubRepoCardProps) {
       target="_blank"
       rel="noopener noreferrer"
       draggable={false}
+      onClick={() => onLinkClick?.()}
       className="group block p-4 rounded-xl bg-spotify-surface border border-spotify-border hover:border-spotify-border-hover hover:bg-spotify-elevated transition-all duration-200 shadow-md cursor-pointer hover:-translate-y-0.5 active:translate-y-0"
     >
       <div className="flex items-center justify-between mb-2">
@@ -54,6 +56,13 @@ export default function GitHubRepoCard({ block }: GitHubRepoCardProps) {
         <span className="flex items-center gap-1 text-zinc-400 group-hover:text-zinc-200 transition-colors">
           <GitFork className="w-3 h-3 text-zinc-400" />
           {repo?.forks?.toLocaleString() ?? 0}
+        </span>
+        <span
+          className="ml-auto flex items-center gap-1 text-spotify-subtext"
+          title="누적 클릭수"
+        >
+          <MousePointerClick className="w-3 h-3 text-spotify-green" />
+          <span>{(block.clickCount ?? 0).toLocaleString()}</span>
         </span>
       </div>
     </a>
